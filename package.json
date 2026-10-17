@@ -1,0 +1,30 @@
+{
+  "name": "erplms",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Multi-tenant School ERP + LMS for Indian schools (Phase 1 MVP)",
+  "workspaces": [
+    "apps/api",
+    "apps/web"
+  ],
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "dev:api": "npm run dev -w @erplms/api",
+    "dev:worker": "npm run dev:worker -w @erplms/api",
+    "dev:web": "npm run dev -w @erplms/web",
+    "lint": "npm run lint --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "build:web": "npm run build -w @erplms/web",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "infra:up": "docker compose -f infra/docker-compose.yml up -d postgres redis",
+    "infra:down": "docker compose -f infra/docker-compose.yml down",
+    "stack:up": "docker compose -f infra/docker-compose.yml --profile app up --build",
+    "stack:down": "docker compose -f infra/docker-compose.yml --profile app down"
+  },
+  "devDependencies": {
+    "prettier": "^3.6.2"
+  }
+}
