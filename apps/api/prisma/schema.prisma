@@ -1,0 +1,12 @@
+// Prisma schema for the School ERP.
+// Models are added in M2 (foundation schema). Every tenant table will carry
+// institute_id and be protected by Postgres Row Level Security (see rls.sql in M2).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
