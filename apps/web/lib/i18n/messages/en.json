@@ -1,0 +1,40 @@
+{
+  "app": {
+    "name": "School ERP",
+    "tagline": "Attendance, fees, notices and more for your school, on any phone."
+  },
+  "common": {
+    "loading": "Loading…",
+    "retry": "Try again",
+    "goHome": "Go to home",
+    "comingSoon": "Coming soon",
+    "comingSoonBody": "This section will be available in a later release.",
+    "language": "Language",
+    "empty": "Nothing here yet."
+  },
+  "errors": {
+    "generic": "Something went wrong.",
+    "network": "Could not reach the server. Check your internet connection.",
+    "notFoundTitle": "Page not found",
+    "notFoundBody": "The page you are looking for does not exist or has moved."
+  },
+  "home": {
+    "systemStatus": "System status",
+    "api": "API",
+    "database": "Database",
+    "redis": "Queue / cache",
+    "statusOk": "Operational",
+    "statusDegraded": "Degraded",
+    "statusDown": "Unreachable",
+    "version": "Version {version}",
+    "checkedAt": "Checked at {time}",
+    "signIn": "Sign in"
+  },
+  "nav": {
+    "login": "Sign in",
+    "admin": "Admin",
+    "teacher": "Teacher",
+    "student": "Student",
+    "parent": "Parent"
+  }
+}
