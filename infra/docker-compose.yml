@@ -1,0 +1,94 @@
+# Local development stack.
+#   Infra only (run api/worker/web on the host):  docker compose -f infra/docker-compose.yml up -d postgres redis
+#   Everything in containers:                     docker compose -f infra/docker-compose.yml --profile app up --build
+name: erplms
+
+x-api-common: &api-common
+  build:
+    context: ..
+    dockerfile: infra/api.Dockerfile
+    target: dev
+  env_file:
+    - path: ../apps/api/.env
+      required: false
+  environment:
+    NODE_ENV: development
+    DATABASE_URL: postgresql://${POSTGRES_USER:-erplms}:${POSTGRES_PASSWORD:-erplms_dev_password}@postgres:5432/${POSTGRES_DB:-erplms}?schema=public
+    REDIS_URL: redis://redis:6379
+    WEB_ORIGIN: http://localhost:3000
+  volumes:
+    - ../apps/api/src:/repo/apps/api/src
+    - ../apps/api/prisma:/repo/apps/api/prisma
+  depends_on:
+    postgres:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+  restart: unless-stopped
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-erplms}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-erplms_dev_password}
+      POSTGRES_DB: ${POSTGRES_DB:-erplms}
+      TZ: UTC
+    ports:
+      - '${POSTGRES_HOST_PORT:-5432}:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    command: ['redis-server', '--appendonly', 'yes', '--maxmemory-policy', 'noeviction']
+    ports:
+      - '${REDIS_HOST_PORT:-6379}:6379'
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    <<: *api-common
+    profiles: [app]
+    command: ['npm', 'run', 'dev', '-w', '@erplms/api']
+    ports:
+      - '4000:4000'
+
+  worker:
+    <<: *api-common
+    profiles: [app]
+    command: ['npm', 'run', 'dev:worker', '-w', '@erplms/api']
+
+  web:
+    profiles: [app]
+    build:
+      context: ..
+      dockerfile: infra/web.Dockerfile
+      target: dev
+    environment:
+      API_INTERNAL_URL: http://api:4000
+      WATCHPACK_POLLING: 'true'
+    volumes:
+      - ../apps/web/app:/repo/apps/web/app
+      - ../apps/web/components:/repo/apps/web/components
+      - ../apps/web/lib:/repo/apps/web/lib
+      - ../apps/web/public:/repo/apps/web/public
+    ports:
+      - '3000:3000'
+    depends_on:
+      - api
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  redisdata:
