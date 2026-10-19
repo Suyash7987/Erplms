@@ -49,6 +49,11 @@ function normalizeError(error) {
     if (mapped) return mapped;
   }
 
+  // A Row Level Security rejection means a write targeted another institute (or had no tenant).
+  if (/row-level security/.test(error?.message ?? '')) {
+    return AppError.forbidden();
+  }
+
   return new AppError(500, ERROR_CODES.INTERNAL_ERROR, 'Something went wrong. Please try again.');
 }
 

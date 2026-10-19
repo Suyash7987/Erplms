@@ -132,6 +132,23 @@ const PERMISSIONS = Object.freeze([
 
 const ALL_CODES = PERMISSIONS.map((permission) => permission.code);
 
+/**
+ * Powerful permissions. Resetting someone's password effectively hands over their account, so it
+ * is only allowed when the actor also holds every privileged permission the target holds.
+ */
+const PRIVILEGED_PERMISSIONS = Object.freeze([
+  'institute.manage',
+  'users.update',
+  'users.reset_password',
+  'roles.manage',
+  'attendance.edit_any',
+  'fees.manage',
+  'fees.concession',
+  'fees.collect',
+  'fees.reverse',
+  'audit.view',
+]);
+
 const SYSTEM_ROLES = Object.freeze([
   {
     code: 'admin',
@@ -228,7 +245,10 @@ function assertCatalogIsConsistent() {
   if (known.size !== ALL_CODES.length) {
     throw new Error('Duplicate permission code in catalog');
   }
-  for (const role of SYSTEM_ROLES) {
+  for (const role of [
+    ...SYSTEM_ROLES,
+    { code: 'privileged', permissions: PRIVILEGED_PERMISSIONS },
+  ]) {
     const unknown = role.permissions.filter((code) => !known.has(code));
     if (unknown.length) {
       throw new Error(`Role ${role.code} references unknown permissions: ${unknown.join(', ')}`);
@@ -238,4 +258,10 @@ function assertCatalogIsConsistent() {
 
 assertCatalogIsConsistent();
 
-module.exports = { PERMISSIONS, SYSTEM_ROLES, CORE_MODULES, TOGGLEABLE_MODULES };
+module.exports = {
+  PERMISSIONS,
+  SYSTEM_ROLES,
+  PRIVILEGED_PERMISSIONS,
+  CORE_MODULES,
+  TOGGLEABLE_MODULES,
+};

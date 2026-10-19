@@ -2,6 +2,12 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { z } = require('zod');
 
+const booleanString = z
+  .enum(['true', 'false', '1', '0'])
+  .transform((value) => value === 'true' || value === '1');
+
+const secret = z.string().min(32, 'must be at least 32 characters (use a long random value)');
+
 const envSchema = z
   .object({
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
@@ -23,12 +29,27 @@ const envSchema = z
 
     BCRYPT_ROUNDS: z.coerce.number().int().min(4).max(15).default(12),
 
+    JWT_ACCESS_SECRET: secret,
+    JWT_REFRESH_SECRET: secret,
+    ACCESS_TOKEN_TTL_MINUTES: z.coerce.number().int().min(1).max(60).default(15),
+    REFRESH_TOKEN_TTL_DAYS: z.coerce.number().int().min(1).max(90).default(30),
+    COOKIE_SECURE: booleanString.optional(),
+
+    LOGIN_MAX_ATTEMPTS: z.coerce.number().int().min(3).max(20).default(5),
+    LOGIN_LOCK_MINUTES: z.coerce.number().int().min(1).max(1440).default(15),
+    LOGIN_RATE_LIMIT_PER_ACCOUNT: z.coerce.number().int().positive().default(10),
+    LOGIN_RATE_LIMIT_PER_IP: z.coerce.number().int().positive().default(100),
+
     APP_TIMEZONE: z.string().default('Asia/Kolkata'),
     DATA_REGION: z.string().default('local'),
   })
   .refine((env) => env.NODE_ENV !== 'production' || env.BCRYPT_ROUNDS >= 10, {
     path: ['BCRYPT_ROUNDS'],
     message: 'must be at least 10 in production',
+  })
+  .refine((env) => env.JWT_ACCESS_SECRET !== env.JWT_REFRESH_SECRET, {
+    path: ['JWT_REFRESH_SECRET'],
+    message: 'must differ from JWT_ACCESS_SECRET',
   });
 
 function parseEnv(source) {
@@ -43,6 +64,7 @@ function parseEnv(source) {
   const env = result.data;
   return Object.freeze({
     ...env,
+    COOKIE_SECURE: env.COOKIE_SECURE ?? env.NODE_ENV === 'production',
     isProduction: env.NODE_ENV === 'production',
     isDevelopment: env.NODE_ENV === 'development',
     isTest: env.NODE_ENV === 'test',

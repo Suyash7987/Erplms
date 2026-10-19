@@ -3,6 +3,8 @@ const { parseEnv } = require('../../src/config/env');
 const base = {
   DATABASE_URL: 'postgresql://user:pass@localhost:5432/db',
   WEB_ORIGIN: 'http://localhost:3000',
+  JWT_ACCESS_SECRET: 'a'.repeat(32),
+  JWT_REFRESH_SECRET: 'b'.repeat(32),
 };
 
 describe('environment validation', () => {
@@ -36,6 +38,15 @@ describe('environment validation', () => {
       /BCRYPT_ROUNDS: must be at least 10 in production/,
     );
     expect(parseEnv({ ...base, BCRYPT_ROUNDS: '4' }).BCRYPT_ROUNDS).toBe(4);
+  });
+
+  test('requires long, distinct JWT secrets and secures cookies in production', () => {
+    expect(() => parseEnv({ ...base, JWT_ACCESS_SECRET: 'short' })).toThrow(/JWT_ACCESS_SECRET/);
+    expect(() => parseEnv({ ...base, JWT_REFRESH_SECRET: base.JWT_ACCESS_SECRET })).toThrow(
+      /JWT_REFRESH_SECRET: must differ/,
+    );
+    expect(parseEnv(base).COOKIE_SECURE).toBe(false);
+    expect(parseEnv({ ...base, NODE_ENV: 'production' }).COOKIE_SECURE).toBe(true);
   });
 
   test('requires a valid web origin for CORS', () => {

@@ -3,12 +3,12 @@
  * subjects, staff (admin, accountant, front office, teachers), 20 students and their guardians.
  *
  * Run with `npm run db:seed` (or automatically by `npm run db:reset`). Demo passwords are printed at
- * the end. Re-running is a no-op while the demo institute exists.
+ * the end. Re-running only syncs the permission catalog and every institute's system roles.
  */
 const { randomUUID } = require('node:crypto');
 const { prisma, withTenant, withPlatform } = require('../src/lib/prisma');
 const { hashPassword } = require('../src/lib/password');
-const { PERMISSIONS, SYSTEM_ROLES } = require('../src/config/permissions');
+const { syncPermissionCatalog, syncSystemRoles } = require('../src/modules/roles/roles.service');
 
 const DEMO_SLUG = 'demo';
 
@@ -68,20 +68,6 @@ const STUDENT_NAMES = [
 
 const date = (isoDate) => new Date(`${isoDate}T00:00:00.000Z`);
 
-async function seedPermissions() {
-  const ids = {};
-  for (const permission of PERMISSIONS) {
-    const row = await prisma.permission.upsert({
-      where: { code: permission.code },
-      update: { module: permission.module, description: permission.description },
-      create: permission,
-      select: { id: true },
-    });
-    ids[permission.code] = row.id;
-  }
-  return ids;
-}
-
 async function hashDemoPasswords() {
   const entries = await Promise.all(
     Object.entries(PASSWORDS).map(async ([key, plain]) => [key, await hashPassword(plain)]),
@@ -112,29 +98,7 @@ async function seedInstitute(tx, instituteId, permissionIds, hashes) {
     },
   });
 
-  // Roles and their default permissions
-  const roleIds = {};
-  for (const role of SYSTEM_ROLES) {
-    const roleId = randomUUID();
-    roleIds[role.code] = roleId;
-    await tx.role.create({
-      data: {
-        id: roleId,
-        instituteId,
-        code: role.code,
-        name: role.name,
-        description: role.description,
-        isSystem: true,
-      },
-    });
-    await tx.rolePermission.createMany({
-      data: role.permissions.map((code) => ({
-        instituteId,
-        roleId,
-        permissionId: permissionIds[code],
-      })),
-    });
-  }
+  const roleIds = await syncSystemRoles(tx, instituteId, permissionIds);
 
   async function createUser({ phone, name, roles, passwordKey }) {
     const user = await tx.user.create({
@@ -362,7 +326,7 @@ async function seedInstitute(tx, instituteId, permissionIds, hashes) {
     let guardianId;
     let relation = gender === 'male' ? 'father' : 'mother';
     const isSibling = lastName === 'Patel'; // Aarav (Class 1) and Ishita (Class 5)
-    const isTeacherChild = classNo === 6 && rollNo === 1; // Arjun's parent is teacher Anita Sharma
+    const isTeacherChild = classNo === 6 && rollNo === 1; // Rohan's parent is teacher Anita Sharma
 
     if (isSibling) {
       relation = 'father';
@@ -468,14 +432,18 @@ function printCredentials({ parentPhones, studentPhones, examples }) {
 }
 
 async function main() {
-  const permissionIds = await seedPermissions();
+  const permissionIds = await syncPermissionCatalog();
 
-  const existing = await withPlatform((tx) =>
-    tx.institute.findUnique({ where: { slug: DEMO_SLUG }, select: { id: true } }),
+  const institutes = await withPlatform((tx) =>
+    tx.institute.findMany({ select: { id: true, slug: true } }),
   );
-  if (existing) {
+  for (const institute of institutes) {
+    await withTenant(institute.id, (tx) => syncSystemRoles(tx, institute.id, permissionIds));
+  }
+  if (institutes.some((institute) => institute.slug === DEMO_SLUG)) {
     console.log(
-      'Demo institute already exists; nothing to do. Run `npm run db:reset` for a fresh copy.',
+      'Demo institute already exists; permissions and system roles synced. ' +
+        'Run `npm run db:reset` for a fresh copy.',
     );
     return;
   }

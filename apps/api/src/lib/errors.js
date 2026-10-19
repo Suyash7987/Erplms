@@ -3,6 +3,15 @@ const ERROR_CODES = Object.freeze({
   INVALID_JSON: 'INVALID_JSON',
   PAYLOAD_TOO_LARGE: 'PAYLOAD_TOO_LARGE',
   UNAUTHORIZED: 'UNAUTHORIZED',
+  TOKEN_EXPIRED: 'TOKEN_EXPIRED',
+  SESSION_EXPIRED: 'SESSION_EXPIRED',
+  SESSION_REFRESHED: 'SESSION_REFRESHED',
+  INVALID_CREDENTIALS: 'INVALID_CREDENTIALS',
+  INVALID_CURRENT_PASSWORD: 'INVALID_CURRENT_PASSWORD',
+  ACCOUNT_LOCKED: 'ACCOUNT_LOCKED',
+  ACCOUNT_DISABLED: 'ACCOUNT_DISABLED',
+  PASSWORD_CHANGE_REQUIRED: 'PASSWORD_CHANGE_REQUIRED',
+  CONSENT_REQUIRED: 'CONSENT_REQUIRED',
   FORBIDDEN: 'FORBIDDEN',
   MODULE_DISABLED: 'MODULE_DISABLED',
   NOT_FOUND: 'NOT_FOUND',
@@ -31,8 +40,8 @@ class AppError extends Error {
     return new AppError(400, ERROR_CODES.VALIDATION_ERROR, message, details);
   }
 
-  static unauthorized(message = 'Authentication required') {
-    return new AppError(401, ERROR_CODES.UNAUTHORIZED, message);
+  static unauthorized(message = 'Authentication required', code = ERROR_CODES.UNAUTHORIZED) {
+    return new AppError(401, code, message);
   }
 
   static forbidden(message = 'You do not have permission to perform this action') {
