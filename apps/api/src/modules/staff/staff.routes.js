@@ -15,5 +15,23 @@ router.get(
   validate({ query: schema.listStaffQuery }),
   controller.list,
 );
+router.post(
+  '/',
+  requirePermission('staff.create'),
+  validate({ body: schema.createStaffBody }),
+  controller.create,
+);
+router.get(
+  '/:staffId',
+  requirePermission('staff.view'),
+  validate({ params: schema.staffParams, query: schema.emptyQuery }),
+  controller.get,
+);
+router.patch(
+  '/:staffId',
+  requirePermission('staff.update'),
+  validate({ params: schema.staffParams, body: schema.updateStaffBody }),
+  controller.update,
+);
 
 module.exports = router;

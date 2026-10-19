@@ -29,4 +29,32 @@ function daysBetween(start, end) {
   return Math.round((end.getTime() - start.getTime()) / DAY_MS);
 }
 
-module.exports = { dateOnlySchema, formatDateOnly, parseDateOnly, daysBetween };
+/**
+ * Dates typed in spreadsheets: YYYY-MM-DD, or the Indian day-first DD-MM-YYYY / DD/MM/YYYY /
+ * DD.MM.YYYY. Returns a Date at UTC midnight, or null when the value is not a real date.
+ */
+function parseFlexibleDate(value) {
+  const text = String(value ?? '').trim();
+  let year;
+  let month;
+  let day;
+  let match = text.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  if (match) {
+    [, year, month, day] = match;
+  } else {
+    match = text.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})$/);
+    if (!match) return null;
+    [, day, month, year] = match;
+  }
+  const iso = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+  const date = parseDateOnly(iso);
+  return Number.isNaN(date.getTime()) || !date.toISOString().startsWith(iso) ? null : date;
+}
+
+module.exports = {
+  dateOnlySchema,
+  formatDateOnly,
+  parseDateOnly,
+  parseFlexibleDate,
+  daysBetween,
+};

@@ -32,4 +32,27 @@ function generateTemporaryPassword(length = 10) {
   return chars.join('');
 }
 
-module.exports = { hashPassword, verifyPassword, generateTemporaryPassword };
+// Temporary passwords are random (~59 bits) and must be changed at first sign-in, so their strength
+// comes from entropy rather than hashing cost. Cost 6 lets a 2,000-row import (up to ~4,000 new
+// parent logins) hash in seconds; passwords people choose always use BCRYPT_ROUNDS.
+const TEMPORARY_ROUNDS = Math.min(env.BCRYPT_ROUNDS, 6);
+
+/**
+ * Generates and hashes `count` temporary passwords in parallel (bcrypt runs on the libuv thread
+ * pool). Do this before opening a transaction so slow hashing never holds a connection.
+ */
+function createTemporaryCredentials(count) {
+  return Promise.all(
+    Array.from({ length: count }, async () => {
+      const plain = generateTemporaryPassword();
+      return { plain, hash: await bcrypt.hash(plain, TEMPORARY_ROUNDS) };
+    }),
+  );
+}
+
+module.exports = {
+  hashPassword,
+  verifyPassword,
+  generateTemporaryPassword,
+  createTemporaryCredentials,
+};

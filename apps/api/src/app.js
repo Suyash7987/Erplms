@@ -50,7 +50,8 @@ function createApp() {
     }),
   );
 
-  app.use(express.json({ limit: '1mb' }));
+  // CSV imports arrive as JSON text (up to ~1 MB of CSV, which grows when JSON-escaped).
+  app.use(express.json({ limit: '2mb' }));
   app.use(express.urlencoded({ extended: false, limit: '100kb' }));
   app.use(cookieParser());
 

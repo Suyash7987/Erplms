@@ -10,6 +10,9 @@ const levelsRoutes = require('./modules/levels/levels.routes');
 const sectionsRoutes = require('./modules/sections/sections.routes');
 const subjectsRoutes = require('./modules/subjects/subjects.routes');
 const staffRoutes = require('./modules/staff/staff.routes');
+const studentsRoutes = require('./modules/students/students.routes');
+const guardiansRoutes = require('./modules/guardians/guardians.routes');
+const importsRoutes = require('./modules/imports/imports.routes');
 
 const router = Router();
 
@@ -27,5 +30,8 @@ router.use('/levels', levelsRoutes);
 router.use('/sections', sectionsRoutes);
 router.use('/subjects', subjectsRoutes);
 router.use('/staff', staffRoutes);
+router.use('/students', studentsRoutes);
+router.use('/guardians', guardiansRoutes);
+router.use('/imports', importsRoutes);
 
 module.exports = router;

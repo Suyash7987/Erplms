@@ -52,7 +52,7 @@ async function listProfiles(tx, { instituteId, userId }) {
     select: { id: true },
   });
   const ownStudent = await tx.student.findFirst({
-    where: { instituteId, userId },
+    where: { instituteId, userId, status: 'active' },
     select: STUDENT_SELECT,
   });
   const guardian = await tx.guardian.findFirst({
