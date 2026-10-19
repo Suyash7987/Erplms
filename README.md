@@ -173,6 +173,34 @@ lets you open each section to set its class teacher and which teacher teaches ea
 | `GET /api/v1/imports/:type/template`               | `students.import` / `staff.import`     |
 | `POST /api/v1/imports/students` or `/staff`        | `students.import` / `staff.import`     |
 
+## Attendance
+
+- **Marking** (`/teacher/attendance`, `/admin/attendance`): everyone starts present; tap a child to
+  mark absent, or choose late / half day / leave. Students with approved leave default to "on leave".
+  Teachers can mark sections where they are class teacher or teach a subject; admins
+  (`attendance.edit_any`) can mark any section.
+- **Rules:** no future dates; the date must be inside the section's academic year; teachers can mark
+  or change up to `settings.attendance.editWindowDays` days back (default 2), admins any time. Once
+  or twice a day follows `settings.attendance.sessionsPerDay`. One record per student per date per
+  session is guaranteed by the database; concurrent saves of the same section are serialised.
+- **Absence alerts:** every newly absent student creates an in-app notification for each guardian
+  with a login (re-saving never sends duplicates). The bell and list arrive in M8.
+- **Audit:** the first marking and every later change (with before/after per student).
+- **Reports** (`attendance.report`): daily across all sections, and a monthly register per section
+  with percentages (present and late count fully, half day as half) and CSV download.
+- **Parents and students** (`/parent/attendance`, `/student/attendance`) see the active child's
+  month as a colour calendar plus year-to-date percentage. The API checks the guardian link on
+  every request, not only the profile in the token.
+
+| Endpoint                                                 | Permission            |
+| -------------------------------------------------------- | --------------------- |
+| `GET /api/v1/attendance/sections`                        | `attendance.mark`     |
+| `GET /api/v1/attendance/roster?sectionId&date`           | `attendance.view`     |
+| `PUT /api/v1/attendance/roster`                          | `attendance.mark`     |
+| `GET /api/v1/attendance/reports/daily?date`              | `attendance.report`   |
+| `GET /api/v1/attendance/reports/monthly?sectionId&month` | `attendance.report`   |
+| `GET /api/v1/attendance/me?month`                        | `attendance.view_own` |
+
 ## Useful URLs
 
 | URL                                      | What                                       |
@@ -249,7 +277,7 @@ Mumbai) for the database and backups, because the system stores children's perso
 - [x] M3 Auth + RBAC
 - [x] M4 Institute setup and academic structure
 - [x] M5 Students, guardians, staff (+ bulk import)
-- [ ] M6 Attendance
+- [x] M6 Attendance
 - [ ] M7 Timetable
 - [ ] M8 Notices and notifications
 - [ ] M9 Fees and payments
