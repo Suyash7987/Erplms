@@ -12,6 +12,11 @@ const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
 
+  experimental: {
+    // Proxied API calls default to a 30 s timeout; large CSV imports can take longer.
+    proxyTimeout: 120_000,
+  },
+
   // The browser only ever talks to the web origin, so auth cookies stay first-party.
   async rewrites() {
     return [{ source: '/api/v1/:path*', destination: `${apiInternalUrl}/api/v1/:path*` }];

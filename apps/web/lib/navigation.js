@@ -5,6 +5,9 @@
 const NAV_ITEMS = {
   '/admin': [
     { href: '/admin', labelKey: 'nav.home', exact: true },
+    { href: '/admin/students', labelKey: 'nav.students', permission: 'students.view' },
+    { href: '/admin/staff', labelKey: 'nav.staff', permission: 'staff.view' },
+    { href: '/admin/import', labelKey: 'nav.import', permission: 'students.import' },
     { href: '/admin/setup', labelKey: 'nav.setup', permission: 'institute.manage' },
     { href: '/admin/classes', labelKey: 'nav.classes', permission: 'academics.view' },
     { href: '/admin/subjects', labelKey: 'nav.subjects', permission: 'academics.view' },

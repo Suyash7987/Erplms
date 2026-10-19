@@ -26,7 +26,10 @@ export class ApiError extends Error {
   }
 }
 
-async function request(path, { method = 'GET', body, headers, signal, timeoutMs } = {}) {
+async function request(
+  path,
+  { method = 'GET', body, headers, signal, timeoutMs, responseType = 'json' } = {},
+) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs ?? DEFAULT_TIMEOUT_MS);
   signal?.addEventListener('abort', () => controller.abort(), { once: true });
@@ -56,6 +59,7 @@ async function request(path, { method = 'GET', body, headers, signal, timeoutMs 
   }
 
   if (response.status === 204) return null;
+  if (responseType === 'blob' && response.ok) return response.blob();
   const data = await response.json().catch(() => null);
   if (!response.ok) {
     throw new ApiError({

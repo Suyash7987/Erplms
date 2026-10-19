@@ -10,6 +10,7 @@ import { Notice, PageHeader } from '@/components/ui/Page';
 import { apiFetch } from '@/lib/api';
 import { apiErrorMessage } from '@/lib/apiErrors';
 import { BOARD_OPTIONS } from '@/lib/boards';
+import { useAction } from '@/lib/useAction';
 import { useApiData } from '@/lib/useApiData';
 import { useLabels } from '@/lib/useLabels';
 
@@ -37,26 +38,6 @@ function suggestedYear() {
     startDate: `${start}-04-01`,
     endDate: `${start + 1}-03-31`,
   };
-}
-
-/** Small helper for a form submit with busy and error state. */
-function useAction() {
-  const { t } = useI18n();
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState(null);
-  async function run(work) {
-    setBusy(true);
-    setError(null);
-    try {
-      return await work();
-    } catch (failure) {
-      setError(apiErrorMessage(t, failure));
-      return undefined;
-    } finally {
-      setBusy(false);
-    }
-  }
-  return { busy, error, run };
 }
 
 export default function SetupWizard() {
