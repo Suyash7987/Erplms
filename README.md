@@ -23,7 +23,11 @@ versioned REST API. Everything runs with just Node.js and PostgreSQL.
    CREATE DATABASE erplms OWNER erplms;
    ```
 
-   `CREATEDB` lets Prisma create its temporary shadow database during `prisma migrate dev`.
+   - `CREATEDB` lets Prisma create its shadow database and lets the tests create `erplms_test`.
+   - The role must **own** the database (PostgreSQL 15+ only lets the owner create tables in
+     `public`). If you created the database in pgAdmin, run `ALTER DATABASE erplms OWNER TO erplms;`.
+   - Never use a superuser (such as `postgres`) in `DATABASE_URL`: superusers bypass Row Level
+     Security. The API logs an error at startup (and refuses to start in production) if you do.
 
 2. Install dependencies and create the env file:
 
@@ -36,13 +40,37 @@ versioned REST API. Everything runs with just Node.js and PostgreSQL.
    The web app needs no env file unless the API is not on `http://localhost:4000`
    (then copy `apps/web/.env.example` to `apps/web/.env.local`).
 
-3. Start both apps with one command:
+3. Create the tables and load demo data:
+
+   ```bash
+   npm run db:migrate   # applies prisma/migrations (schema, CHECK constraints, RLS policies)
+   npm run db:seed      # demo institute; prints the demo logins
+   ```
+
+4. Start both apps with one command:
 
    ```bash
    npm run dev          # api on http://localhost:4000/api/v1, web on http://localhost:3000
    ```
 
    `npm run dev:api` and `npm run dev:web` start them individually.
+
+## Demo data
+
+`npm run db:seed` creates **Demo Public School** (institute code `demo`, CBSE, academic year 2026-27)
+with Classes 1-12 (sections A and B), subjects, staff, and 20 students in Classes 1-A, 5-A, 6-A and 10-A.
+`npm run db:reset` drops the database, re-applies migrations and seeds again.
+
+| Role         | Phone                 | Password        | Notes                                   |
+| ------------ | --------------------- | --------------- | --------------------------------------- |
+| Admin        | 9000000001            | `Admin@1234`    | Meera Iyer                              |
+| Accountant   | 9000000002            | `Accounts@1234` | Rakesh Gupta                            |
+| Front office | 9000000003            | `Office@1234`   | Pooja Nair                              |
+| Teacher      | 9000000011-9000000014 | `Teacher@1234`  | 9000000011 is also a parent (Class 6-A) |
+| Parent       | 9000000101-9000000118 | `Parent@1234`   | 9000000101 has two children (siblings)  |
+| Student      | 9000000201-9000000205 | `Student@1234`  | Class 10-A students                     |
+
+Demo accounts skip the forced password change. Login itself arrives in M3.
 
 ## Useful URLs
 
@@ -57,15 +85,40 @@ only ever talks to the web origin and auth cookies stay first-party.
 
 ## Scripts
 
-| Command              | Description                            |
-| -------------------- | -------------------------------------- |
-| `npm run dev`        | API + web together (`concurrently`)    |
-| `npm run lint`       | ESLint in both workspaces              |
-| `npm test`           | Jest + Supertest (API)                 |
-| `npm run format`     | Prettier (write); `format:check` in CI |
-| `npm run build:web`  | Production build of the web app        |
-| `npm run db:migrate` | Create/apply Prisma migrations         |
-| `npm run db:studio`  | Browse the database with Prisma Studio |
+| Command              | Description                             |
+| -------------------- | --------------------------------------- |
+| `npm run dev`        | API + web together (`concurrently`)     |
+| `npm run lint`       | ESLint in both workspaces               |
+| `npm test`           | Unit + integration tests (API)          |
+| `npm run format`     | Prettier (write); `format:check` in CI  |
+| `npm run build:web`  | Production build of the web app         |
+| `npm run db:migrate` | Create/apply Prisma migrations          |
+| `npm run db:seed`    | Load the demo institute                 |
+| `npm run db:reset`   | Drop, re-migrate and re-seed (dev only) |
+| `npm run db:studio`  | Browse the database with Prisma Studio  |
+
+### Tests
+
+- `npm run test:unit -w @erplms/api`: no database needed.
+- `npm run test:integration -w @erplms/api`: drops and recreates a separate **`<your db>_test`**
+  database (for example `erplms_test`), applies all migrations and runs the tenant-isolation and
+  database-guard tests. Your development database is never touched. Set `TEST_DATABASE_URL` to use a
+  different one (its name must end in `_test`).
+
+## Multi-tenancy and data safety
+
+- Every tenant table has `institute_id` and Postgres **Row Level Security** (`apps/api/prisma/rls.sql`,
+  applied by the `*_tenant_rls` migration). Policies are `FORCE`d so they apply to the table owner too.
+- Services run tenant work through `withTenant(instituteId, async (tx) => ...)` from
+  `src/lib/prisma.js`. It opens a transaction and sets `app.institute_id` (the parameterised form of
+  `SET LOCAL`). Without it, tenant tables return no rows and reject writes. Services also filter by
+  `instituteId` as a second layer.
+- Relations between tenant tables are composite foreign keys on `(institute_id, id)`, so a row can
+  never point at another institute's record.
+- `payments`, `payment_reversals` and `audit_logs` are append-only (a trigger rejects UPDATE/DELETE).
+  Money is `BIGINT` paise; CHECK constraints guard amounts, invoice totals and payment references.
+- Students are never hard-deleted; leaving is a status change. Per-year placement lives in
+  `student_enrollments`.
 
 ## Architecture rules
 
@@ -91,7 +144,7 @@ Mumbai) for the database and backups, because the system stores children's perso
 ## Milestones
 
 - [x] M1 Repo scaffolding
-- [ ] M2 Foundation schema, RLS, tenant isolation
+- [x] M2 Foundation schema, RLS, tenant isolation
 - [ ] M3 Auth + RBAC
 - [ ] M4 Institute setup and academic structure
 - [ ] M5 Students, guardians, staff (+ bulk import)

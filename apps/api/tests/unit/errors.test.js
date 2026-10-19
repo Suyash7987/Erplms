@@ -2,12 +2,12 @@ const express = require('express');
 const request = require('supertest');
 const { z } = require('zod');
 
-jest.mock('../src/lib/prisma', () => ({ prisma: {} }));
+jest.mock('../../src/lib/prisma', () => ({ prisma: {} }));
 
-const { createApp } = require('../src/app');
-const { validate } = require('../src/middleware/validate');
-const { errorHandler, notFoundHandler } = require('../src/middleware/error');
-const { AppError } = require('../src/lib/errors');
+const { createApp } = require('../../src/app');
+const { validate } = require('../../src/middleware/validate');
+const { errorHandler, notFoundHandler } = require('../../src/middleware/error');
+const { AppError } = require('../../src/lib/errors');
 
 function buildTestApp() {
   const app = express();

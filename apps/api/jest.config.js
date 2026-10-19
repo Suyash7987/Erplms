@@ -1,7 +1,19 @@
-module.exports = {
+const shared = {
   testEnvironment: 'node',
-  roots: ['<rootDir>/tests'],
   setupFiles: ['<rootDir>/tests/setup-env.js'],
-  collectCoverageFrom: ['src/**/*.js', '!src/server.js'],
   clearMocks: true,
+};
+
+module.exports = {
+  collectCoverageFrom: ['src/**/*.js', '!src/server.js'],
+  projects: [
+    { ...shared, displayName: 'unit', roots: ['<rootDir>/tests/unit'] },
+    {
+      ...shared,
+      displayName: 'integration',
+      roots: ['<rootDir>/tests/integration'],
+      // Recreates the *_test database and applies all migrations before the integration tests.
+      globalSetup: '<rootDir>/tests/integration/global-setup.js',
+    },
+  ],
 };

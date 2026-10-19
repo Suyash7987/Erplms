@@ -1,4 +1,4 @@
-const { toLocalDateString, toZonedIso } = require('../src/lib/time');
+const { toLocalDateString, toZonedIso } = require('../../src/lib/time');
 
 describe('IST date handling', () => {
   test('a UTC evening instant is already the next calendar day in IST', () => {

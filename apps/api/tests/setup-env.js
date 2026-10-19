@@ -1,13 +1,11 @@
-const defaults = {
+const { resolveTestDatabaseUrl } = require('./helpers/test-database-url');
+
+// Forced (not defaulted): Prisma loads apps/api/.env into process.env, which must not leak into tests.
+Object.assign(process.env, {
   NODE_ENV: 'test',
-  LOG_LEVEL: 'silent',
-  DATABASE_URL: 'postgresql://erplms:erplms_dev_password@localhost:5432/erplms_test?schema=public',
+  LOG_LEVEL: process.env.TEST_LOG_LEVEL || 'silent',
   WEB_ORIGIN: 'http://localhost:3000',
   RATE_LIMIT_MAX: '10000',
-};
-
-for (const [key, value] of Object.entries(defaults)) {
-  if (key === 'NODE_ENV' || process.env[key] === undefined) {
-    process.env[key] = value;
-  }
-}
+  BCRYPT_ROUNDS: '4',
+  DATABASE_URL: resolveTestDatabaseUrl(),
+});

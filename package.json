@@ -18,6 +18,8 @@
     "test": "npm run test --workspaces --if-present",
     "build:web": "npm run build -w @erplms/web",
     "db:migrate": "npm run db:migrate -w @erplms/api",
+    "db:seed": "npm run db:seed -w @erplms/api",
+    "db:reset": "npm run db:reset -w @erplms/api",
     "db:studio": "npm run db:studio -w @erplms/api",
     "format": "prettier --write .",
     "format:check": "prettier --check ."

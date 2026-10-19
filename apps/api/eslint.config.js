@@ -34,6 +34,11 @@ module.exports = [
     },
   },
   {
+    // CLI scripts report to the terminal.
+    files: ['prisma/**/*.js'],
+    rules: { 'no-console': 'off' },
+  },
+  {
     files: ['tests/**/*.js', '**/*.test.js'],
     languageOptions: { globals: { ...globals.jest } },
   },

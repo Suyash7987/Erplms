@@ -2,9 +2,9 @@ const request = require('supertest');
 
 const mockQueryRaw = jest.fn();
 
-jest.mock('../src/lib/prisma', () => ({ prisma: { $queryRaw: mockQueryRaw } }));
+jest.mock('../../src/lib/prisma', () => ({ prisma: { $queryRaw: mockQueryRaw } }));
 
-const { createApp } = require('../src/app');
+const { createApp } = require('../../src/app');
 
 describe('health endpoints', () => {
   const app = createApp();

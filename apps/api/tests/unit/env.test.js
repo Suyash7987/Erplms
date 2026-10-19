@@ -1,4 +1,4 @@
-const { parseEnv } = require('../src/config/env');
+const { parseEnv } = require('../../src/config/env');
 
 const base = {
   DATABASE_URL: 'postgresql://user:pass@localhost:5432/db',
@@ -29,6 +29,13 @@ describe('environment validation', () => {
     expect(() => parseEnv({ ...base, DATABASE_URL: 'mysql://localhost/db' })).toThrow(
       /DATABASE_URL: must be a postgres/,
     );
+  });
+
+  test('requires a strong bcrypt cost in production', () => {
+    expect(() => parseEnv({ ...base, NODE_ENV: 'production', BCRYPT_ROUNDS: '4' })).toThrow(
+      /BCRYPT_ROUNDS: must be at least 10 in production/,
+    );
+    expect(parseEnv({ ...base, BCRYPT_ROUNDS: '4' }).BCRYPT_ROUNDS).toBe(4);
   });
 
   test('requires a valid web origin for CORS', () => {

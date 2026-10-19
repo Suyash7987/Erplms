@@ -2,25 +2,34 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { z } = require('zod');
 
-const envSchema = z.object({
-  NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
-  PORT: z.coerce.number().int().min(1).max(65535).default(4000),
-  LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
+const envSchema = z
+  .object({
+    NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+    PORT: z.coerce.number().int().min(1).max(65535).default(4000),
+    LOG_LEVEL: z
+      .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'])
+      .default('info'),
 
-  DATABASE_URL: z
-    .string()
-    .url()
-    .refine((value) => /^postgres(ql)?:\/\//.test(value), 'must be a postgres:// URL'),
+    DATABASE_URL: z
+      .string()
+      .url()
+      .refine((value) => /^postgres(ql)?:\/\//.test(value), 'must be a postgres:// URL'),
 
-  WEB_ORIGIN: z.string().url(),
-  TRUST_PROXY: z.coerce.number().int().min(0).default(0),
+    WEB_ORIGIN: z.string().url(),
+    TRUST_PROXY: z.coerce.number().int().min(0).default(0),
 
-  RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(60_000),
-  RATE_LIMIT_MAX: z.coerce.number().int().positive().default(300),
+    RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(60_000),
+    RATE_LIMIT_MAX: z.coerce.number().int().positive().default(300),
 
-  APP_TIMEZONE: z.string().default('Asia/Kolkata'),
-  DATA_REGION: z.string().default('local'),
-});
+    BCRYPT_ROUNDS: z.coerce.number().int().min(4).max(15).default(12),
+
+    APP_TIMEZONE: z.string().default('Asia/Kolkata'),
+    DATA_REGION: z.string().default('local'),
+  })
+  .refine((env) => env.NODE_ENV !== 'production' || env.BCRYPT_ROUNDS >= 10, {
+    path: ['BCRYPT_ROUNDS'],
+    message: 'must be at least 10 in production',
+  });
 
 function parseEnv(source) {
   const result = envSchema.safeParse(source);
