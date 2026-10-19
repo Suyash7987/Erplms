@@ -70,7 +70,45 @@ with Classes 1-12 (sections A and B), subjects, staff, and 20 students in Classe
 | Parent       | 9000000101-9000000118 | `Parent@1234`   | 9000000101 has two children (siblings)  |
 | Student      | 9000000201-9000000205 | `Student@1234`  | Class 10-A students                     |
 
-Demo accounts skip the forced password change. Login itself arrives in M3.
+Sign in at http://localhost:3000/login with institute code `demo`. Demo accounts skip the forced
+password change; parents see the DPDP consent screen on their first sign-in.
+
+## Sign-in, sessions and permissions
+
+- **Login** is institute code + mobile number + password (one phone can exist in several schools).
+  The API sets two httpOnly, `SameSite=Strict` cookies: a 15-minute access JWT (`erp_at`, path
+  `/api/v1`) and a 30-day refresh JWT (`erp_rt`, path `/api/v1/auth`). JavaScript never sees tokens.
+- **Refresh rotation:** every refresh issues a new refresh token; tokens are stored SHA-256-hashed in
+  `refresh_tokens`. Presenting an already-rotated token revokes the whole session family (theft
+  detection); two tabs refreshing at the same moment are tolerated.
+- **Lockout:** 5 wrong passwords lock the account for 15 minutes (`failed_attempts`, `locked_until`).
+  Login is also rate limited per account and per IP (in memory).
+- **Onboarding:** users with a temporary password must change it first, and parents must accept the
+  DPDP consent (`consents` table, versioned in `src/config/consent.js`). Until then the API answers
+  `PASSWORD_CHANGE_REQUIRED` / `CONSENT_REQUIRED` for everything except the auth endpoints.
+- **Profiles:** one user can hold several roles (a teacher who is also a parent) and a parent gets one
+  profile per child. The JWT carries the active role and profile; `POST /auth/switch-profile` changes it.
+- **RBAC as data:** `requirePermission('fees.collect')` checks the active role's permissions, loaded
+  from the database on every request (role changes apply immediately), and returns `MODULE_DISABLED`
+  when the institute has switched the module off. Nobody can grant permissions they do not hold, and
+  password resets cannot take over accounts with more privileged access.
+- **Audit:** logins, failed logins, lockouts, logouts, password changes and resets, refresh-token
+  reuse, consent and role changes are written to `audit_logs`.
+
+| Endpoint                                    | Who                    | What                                 |
+| ------------------------------------------- | ---------------------- | ------------------------------------ |
+| `POST /api/v1/auth/login`                   | anyone                 | Sign in                              |
+| `POST /api/v1/auth/refresh`                 | signed in              | Rotate tokens                        |
+| `POST /api/v1/auth/logout`                  | signed in              | End this device's session            |
+| `GET /api/v1/auth/me`                       | signed in              | Session: user, profiles, permissions |
+| `POST /api/v1/auth/change-password`         | signed in              | Change password (signs out others)   |
+| `POST /api/v1/auth/switch-profile`          | signed in              | Switch role / child                  |
+| `GET, POST /api/v1/auth/consent`            | parent profile         | Read / accept DPDP consent           |
+| `GET /api/v1/users`                         | `users.view`           | List users (page, limit, q, role)    |
+| `POST /api/v1/users/:id/reset-password`     | `users.reset_password` | Temporary password, shown once       |
+| `POST/DELETE /api/v1/users/:id/roles`       | `roles.manage`         | Assign / remove a role               |
+| `GET /api/v1/roles`, `/roles/permissions`   | `roles.view`           | Roles and the permission catalog     |
+| `POST /api/v1/roles`, `PUT .../permissions` | `roles.manage`         | Custom roles and their permissions   |
 
 ## Useful URLs
 
@@ -145,7 +183,7 @@ Mumbai) for the database and backups, because the system stores children's perso
 
 - [x] M1 Repo scaffolding
 - [x] M2 Foundation schema, RLS, tenant isolation
-- [ ] M3 Auth + RBAC
+- [x] M3 Auth + RBAC
 - [ ] M4 Institute setup and academic structure
 - [ ] M5 Students, guardians, staff (+ bulk import)
 - [ ] M6 Attendance
