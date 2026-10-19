@@ -1,5 +1,5 @@
-import RoleHome from '@/components/layout/RoleHome';
+import FamilyHome from '@/components/attendance/FamilyHome';
 
 export default function ParentHomePage() {
-  return <RoleHome titleKey="nav.parent" />;
+  return <FamilyHome area="/parent" />;
 }

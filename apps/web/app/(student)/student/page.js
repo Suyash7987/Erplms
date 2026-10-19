@@ -1,5 +1,5 @@
-import RoleHome from '@/components/layout/RoleHome';
+import FamilyHome from '@/components/attendance/FamilyHome';
 
 export default function StudentHomePage() {
-  return <RoleHome titleKey="nav.student" />;
+  return <FamilyHome area="/student" />;
 }

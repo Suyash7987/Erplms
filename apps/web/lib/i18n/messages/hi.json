@@ -150,7 +150,9 @@
     "settings": "सेटिंग्स",
     "students": "छात्र",
     "staff": "स्टाफ़",
-    "import": "इम्पोर्ट"
+    "import": "इम्पोर्ट",
+    "attendance": "उपस्थिति",
+    "attendanceReports": "उपस्थिति रिपोर्ट"
   },
   "labels": {
     "level": "कक्षा",
@@ -527,5 +529,89 @@
     "doneTitle": "इम्पोर्ट पूरा हुआ",
     "done": "{imported} पंक्तियाँ इम्पोर्ट हुईं, {skipped} छोड़ी गईं।",
     "another": "एक और फ़ाइल इम्पोर्ट करें"
+  },
+  "attendance": {
+    "markTitle": "उपस्थिति लगाएँ",
+    "todayTitle": "आज की उपस्थिति",
+    "section": "कक्षा",
+    "date": "तारीख",
+    "session": "सत्र",
+    "month": "महीना",
+    "sessions": {
+      "full_day": "पूरा दिन",
+      "morning": "सुबह",
+      "afternoon": "दोपहर"
+    },
+    "statuses": {
+      "present": "उपस्थित",
+      "absent": "अनुपस्थित",
+      "late": "देर से",
+      "half_day": "आधा दिन",
+      "on_leave": "छुट्टी पर"
+    },
+    "short": {
+      "present": "उप",
+      "absent": "अनु",
+      "late": "देर",
+      "half_day": "आधा",
+      "on_leave": "छुट्टी"
+    },
+    "statusFor": "{name} की स्थिति",
+    "approvedLeave": "स्वीकृत छुट्टी",
+    "tapHint": "सभी उपस्थित हैं। अनुपस्थित बच्चे पर टैप करें।",
+    "allPresent": "सभी को उपस्थित करें",
+    "notMarked": "अभी उपस्थिति नहीं लगी।",
+    "markedBy": "{name} ने {time} पर लगाई।",
+    "editableUntil": "{date} तक बदली जा सकती है।",
+    "locked": {
+      "not_assigned": "आप यह कक्षा देख सकते हैं, पर उपस्थिति सिर्फ़ कक्षा-शिक्षक या विषय-शिक्षक लगा सकते हैं।",
+      "edit_window_closed": "शिक्षक अब इस दिन की उपस्थिति नहीं बदल सकते। सुधार के लिए एडमिन से कहें।"
+    },
+    "save": "उपस्थिति सेव करें",
+    "update": "उपस्थिति अपडेट करें",
+    "saved": "उपस्थिति सेव हो गई।",
+    "savedNotified": "उपस्थिति सेव हो गई। {count} अभिभावकों को ऐप में सूचना भेजी गई।",
+    "others": "{count} अन्य",
+    "noStudents": "इस कक्षा में अभी कोई छात्र नहीं है।",
+    "noSections": "उपस्थिति के लिए कोई कक्षा नहीं",
+    "noSectionsHelp": "आप उन कक्षाओं की उपस्थिति लगा सकते हैं जिनके आप कक्षा-शिक्षक हैं या जिनमें कोई विषय पढ़ाते हैं। एडमिन से जुड़वाएँ।",
+    "studentsCount": "{count} छात्र",
+    "classTeacher": "कक्षा-शिक्षक",
+    "markNow": "अभी लगाएँ",
+    "reportsTitle": "उपस्थिति रिपोर्ट",
+    "tabs": {
+      "daily": "दैनिक",
+      "monthly": "मासिक रजिस्टर"
+    },
+    "taken": "लगी",
+    "takenYes": "हो गई",
+    "takenNo": "नहीं लगी",
+    "otherStatuses": "देर / छुट्टी",
+    "sectionsTaken": "कक्षाएँ पूरी",
+    "overall": "उपस्थिति",
+    "monthSummary": "{days} कार्य सत्र · {percentage} उपस्थिति",
+    "showRegister": "रजिस्टर दिखाएँ",
+    "hideRegister": "रजिस्टर छिपाएँ",
+    "register": "उपस्थिति रजिस्टर",
+    "downloadCsv": "CSV डाउनलोड करें",
+    "myTitle": "{name} की उपस्थिति",
+    "daysPresent": "इस महीने उपस्थित",
+    "daysAbsent": "इस महीने अनुपस्थित",
+    "thisYear": "इस वर्ष",
+    "previousMonth": "पिछला महीना",
+    "nextMonth": "अगला महीना",
+    "weekdays": {
+      "mon": "सोम",
+      "tue": "मंगल",
+      "wed": "बुध",
+      "thu": "गुरु",
+      "fri": "शुक्र",
+      "sat": "शनि",
+      "sun": "रवि"
+    },
+    "absencesThisMonth": "इन दिनों अनुपस्थित",
+    "contactSchool": "अगर कोई अनुपस्थिति गलत है तो कक्षा-शिक्षक से संपर्क करें।",
+    "noAbsences": "इस महीने कोई अनुपस्थिति नहीं।",
+    "homeSummary": "इस महीने: {present} उपस्थित, {absent} अनुपस्थित · इस वर्ष {percentage}%"
   }
 }

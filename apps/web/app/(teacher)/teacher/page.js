@@ -1,5 +1,5 @@
-import RoleHome from '@/components/layout/RoleHome';
+import TeacherHome from '@/components/attendance/TeacherHome';
 
 export default function TeacherHomePage() {
-  return <RoleHome titleKey="nav.teacher" />;
+  return <TeacherHome />;
 }
