@@ -14,6 +14,7 @@ const studentsRoutes = require('./modules/students/students.routes');
 const guardiansRoutes = require('./modules/guardians/guardians.routes');
 const importsRoutes = require('./modules/imports/imports.routes');
 const attendanceRoutes = require('./modules/attendance/attendance.routes');
+const timetableRoutes = require('./modules/timetable/timetable.routes');
 
 const router = Router();
 
@@ -35,5 +36,6 @@ router.use('/students', studentsRoutes);
 router.use('/guardians', guardiansRoutes);
 router.use('/imports', importsRoutes);
 router.use('/attendance', attendanceRoutes);
+router.use('/timetable', timetableRoutes);
 
 module.exports = router;

@@ -30,6 +30,17 @@ const settingsSchema = z
       .partial()
       .strict()
       .optional(),
+    timetable: z
+      .object({
+        workingDays: z
+          .array(z.number().int().min(1).max(7))
+          .min(1)
+          .max(7)
+          .transform((days) => [...new Set(days)].sort()),
+      })
+      .partial()
+      .strict()
+      .optional(),
     fees: z
       .object({
         receiptPrefix: z

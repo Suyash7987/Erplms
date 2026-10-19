@@ -6,6 +6,7 @@ const { notifyUsers } = require('../../lib/notify');
 const { toLocalDateString } = require('../../lib/time');
 const { formatDateOnly, parseDateOnly, daysBetween } = require('../../lib/dates');
 const { requireCurrentYear } = require('../academic-years/academic-years.service');
+const { resolveOwnStudent } = require('../students/own-student.service');
 
 const SESSION_TYPES = { 1: ['full_day'], 2: ['morning', 'afternoon'] };
 const DEFAULT_EDIT_WINDOW_DAYS = 2;
@@ -569,28 +570,6 @@ function monthlyReport(ctx, { sectionId, month }) {
 // ---------------------------------------------------------------------------
 // Parent / student view
 // ---------------------------------------------------------------------------
-
-/**
- * The student the active profile is about. The JWT names the child; the database must confirm that
- * this user is that child's guardian (parent) or the child's own login (student).
- */
-async function resolveOwnStudent(tx, ctx) {
-  const studentId = ctx.profile.type === 'student' ? ctx.profile.id : null;
-  if (!studentId) throw AppError.forbidden('Switch to a child profile to see attendance');
-  const allowed =
-    ctx.roleCode === 'student'
-      ? await tx.student.count({
-          where: { id: studentId, instituteId: ctx.instituteId, userId: ctx.userId },
-        })
-      : await tx.studentGuardian.count({
-          where: { instituteId: ctx.instituteId, studentId, guardian: { userId: ctx.userId } },
-        });
-  if (!allowed) throw AppError.forbidden();
-  return tx.student.findFirst({
-    where: { id: studentId, instituteId: ctx.instituteId },
-    select: { id: true, firstName: true, lastName: true },
-  });
-}
 
 function myAttendance(ctx, { month }) {
   return withTenant(ctx.instituteId, async (tx) => {

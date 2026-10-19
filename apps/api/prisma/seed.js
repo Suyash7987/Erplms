@@ -40,6 +40,18 @@ const TEACHERS = [
   { phone: '9000000014', name: 'Suresh Reddy', code: 'EMP014', classTeacherOf: 10 },
 ];
 
+const PERIODS = [
+  ['Period 1', '08:00', '08:40', false],
+  ['Period 2', '08:40', '09:20', false],
+  ['Period 3', '09:20', '10:00', false],
+  ['Short break', '10:00', '10:15', true],
+  ['Period 4', '10:15', '10:55', false],
+  ['Period 5', '10:55', '11:35', false],
+  ['Lunch', '11:35', '12:05', true],
+  ['Period 6', '12:05', '12:45', false],
+  ['Period 7', '12:45', '13:25', false],
+];
+
 // Students are placed in section A of these classes.
 const SAMPLE_CLASSES = [1, 5, 6, 10];
 
@@ -272,6 +284,36 @@ async function seedInstitute(tx, instituteId, permissionIds, hashes) {
       })),
     });
   }
+
+  // Bell schedule and a sample week for Class 1-A (Monday to Saturday)
+  const periodIds = [];
+  for (const [index, [name, startTime, endTime, isBreak]] of PERIODS.entries()) {
+    const period = await tx.period.create({
+      data: { instituteId, academicYearId, periodNo: index + 1, name, startTime, endTime, isBreak },
+      select: { id: true },
+    });
+    if (!isBreak) periodIds.push({ id: period.id, startTime, endTime });
+  }
+  const primaryCodes = ['ENG', 'HIN', 'MATH', 'EVS'];
+  const slots = [];
+  for (let day = 1; day <= 6; day += 1) {
+    periodIds.forEach((period, p) => {
+      const index = (day + p) % primaryCodes.length;
+      slots.push({
+        instituteId,
+        academicYearId,
+        sectionId: sectionIds['1A'],
+        subjectId: subjectIds[primaryCodes[index]],
+        teacherStaffId: teacherStaffIds[index % teacherStaffIds.length],
+        periodId: period.id,
+        dayOfWeek: day,
+        startTime: period.startTime,
+        endTime: period.endTime,
+        room: '1A',
+      });
+    });
+  }
+  await tx.timetableSlot.createMany({ data: slots });
 
   // Students, enrollments and guardians
   const sharedGuardian = { name: 'Ramesh Patel', phone: '9000000101' }; // sibling case
