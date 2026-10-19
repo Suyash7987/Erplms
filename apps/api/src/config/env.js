@@ -2,10 +2,6 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { z } = require('zod');
 
-const booleanString = z
-  .enum(['true', 'false', '1', '0'])
-  .transform((value) => value === 'true' || value === '1');
-
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().min(1).max(65535).default(4000),
@@ -15,21 +11,12 @@ const envSchema = z.object({
     .string()
     .url()
     .refine((value) => /^postgres(ql)?:\/\//.test(value), 'must be a postgres:// URL'),
-  REDIS_URL: z
-    .string()
-    .url()
-    .refine((value) => /^rediss?:\/\//.test(value), 'must be a redis:// or rediss:// URL'),
 
   WEB_ORIGIN: z.string().url(),
   TRUST_PROXY: z.coerce.number().int().min(0).default(0),
 
-  SWAGGER_ENABLED: booleanString.optional(),
-
   RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(60_000),
   RATE_LIMIT_MAX: z.coerce.number().int().positive().default(300),
-
-  SENTRY_DSN: z.union([z.string().url(), z.literal('')]).optional(),
-  SENTRY_TRACES_SAMPLE_RATE: z.coerce.number().min(0).max(1).default(0),
 
   APP_TIMEZONE: z.string().default('Asia/Kolkata'),
   DATA_REGION: z.string().default('local'),
@@ -47,8 +34,6 @@ function parseEnv(source) {
   const env = result.data;
   return Object.freeze({
     ...env,
-    SENTRY_DSN: env.SENTRY_DSN || undefined,
-    SWAGGER_ENABLED: env.SWAGGER_ENABLED ?? env.NODE_ENV !== 'production',
     isProduction: env.NODE_ENV === 'production',
     isDevelopment: env.NODE_ENV === 'development',
     isTest: env.NODE_ENV === 'test',

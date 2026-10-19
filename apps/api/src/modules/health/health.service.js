@@ -1,7 +1,6 @@
 const pkg = require('../../../package.json');
 const { env } = require('../../config/env');
 const { prisma } = require('../../lib/prisma');
-const { getRedis } = require('../../lib/redis');
 const { nowIso, toZonedIso } = require('../../lib/time');
 
 const CHECK_TIMEOUT_MS = 2_000;
@@ -41,12 +40,9 @@ function liveness() {
 }
 
 async function readiness() {
-  const [database, redis] = await Promise.all([
-    runCheck(() => prisma.$queryRaw`SELECT 1`),
-    runCheck(() => getRedis().ping()),
-  ]);
-
-  const checks = { database, redis };
+  const checks = {
+    database: await runCheck(() => prisma.$queryRaw`SELECT 1`),
+  };
   const healthy = Object.values(checks).every((check) => check.status === 'ok');
 
   return {

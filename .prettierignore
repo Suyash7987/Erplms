@@ -3,5 +3,4 @@ package-lock.json
 coverage
 .next
 apps/api/prisma/migrations
-apps/api/storage
 apps/web/public/icons

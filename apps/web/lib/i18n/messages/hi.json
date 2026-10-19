@@ -22,7 +22,6 @@
     "systemStatus": "सिस्टम की स्थिति",
     "api": "एपीआई",
     "database": "डेटाबेस",
-    "redis": "क्यू / कैश",
     "statusOk": "चालू",
     "statusDegraded": "आंशिक रूप से चालू",
     "statusDown": "उपलब्ध नहीं",

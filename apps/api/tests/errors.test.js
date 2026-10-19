@@ -3,7 +3,6 @@ const request = require('supertest');
 const { z } = require('zod');
 
 jest.mock('../src/lib/prisma', () => ({ prisma: {} }));
-jest.mock('../src/lib/redis', () => ({ getRedis: () => ({}) }));
 
 const { createApp } = require('../src/app');
 const { validate } = require('../src/middleware/validate');

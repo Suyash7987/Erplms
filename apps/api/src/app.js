@@ -5,7 +5,6 @@ const cors = require('cors');
 const pinoHttp = require('pino-http');
 const { env } = require('./config/env');
 const { logger } = require('./lib/logger');
-const { mountDocs } = require('./lib/swagger');
 const { errorHandler, notFoundHandler } = require('./middleware/error');
 const apiRouter = require('./routes');
 
@@ -50,13 +49,8 @@ function createApp() {
     }),
   );
 
-  // Payment webhooks need the raw body for signature checks; mount them above these parsers.
   app.use(express.json({ limit: '1mb' }));
   app.use(express.urlencoded({ extended: false, limit: '100kb' }));
-
-  if (env.SWAGGER_ENABLED) {
-    mountDocs(app);
-  }
 
   app.use('/api/v1', apiRouter);
 

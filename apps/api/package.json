@@ -2,16 +2,14 @@
   "name": "@erplms/api",
   "version": "0.1.0",
   "private": true,
-  "description": "School ERP REST API (Express) and background worker (BullMQ)",
+  "description": "School ERP REST API (Express + Prisma + PostgreSQL)",
   "main": "src/server.js",
   "engines": {
     "node": ">=22.0.0"
   },
   "scripts": {
     "dev": "node --watch src/server.js",
-    "dev:worker": "node --watch src/worker/index.js",
     "start": "node src/server.js",
-    "start:worker": "node src/worker/index.js",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "test": "jest --runInBand",
@@ -25,18 +23,13 @@
   },
   "dependencies": {
     "@prisma/client": "^6.16.0",
-    "@sentry/node": "^8.55.0",
-    "bullmq": "^5.58.0",
     "cors": "^2.8.5",
     "express": "^5.1.0",
     "express-rate-limit": "^7.5.1",
     "helmet": "^8.1.0",
-    "ioredis": "^5.7.0",
     "pino": "^9.9.0",
     "pino-http": "^10.5.0",
     "prisma": "^6.16.0",
-    "swagger-jsdoc": "^6.2.8",
-    "swagger-ui-express": "^5.0.1",
     "zod": "^3.25.76"
   },
   "devDependencies": {

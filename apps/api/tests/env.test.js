@@ -2,7 +2,6 @@ const { parseEnv } = require('../src/config/env');
 
 const base = {
   DATABASE_URL: 'postgresql://user:pass@localhost:5432/db',
-  REDIS_URL: 'redis://localhost:6379',
   WEB_ORIGIN: 'http://localhost:3000',
 };
 
@@ -14,8 +13,8 @@ describe('environment validation', () => {
       NODE_ENV: 'development',
       PORT: 4000,
       APP_TIMEZONE: 'Asia/Kolkata',
-      SWAGGER_ENABLED: true,
-      SENTRY_DSN: undefined,
+      RATE_LIMIT_MAX: 300,
+      isDevelopment: true,
     });
     expect(Object.isFrozen(env)).toBe(true);
   });
@@ -32,14 +31,7 @@ describe('environment validation', () => {
     );
   });
 
-  test('disables Swagger in production unless explicitly enabled', () => {
-    expect(parseEnv({ ...base, NODE_ENV: 'production' }).SWAGGER_ENABLED).toBe(false);
-    expect(
-      parseEnv({ ...base, NODE_ENV: 'production', SWAGGER_ENABLED: 'true' }).SWAGGER_ENABLED,
-    ).toBe(true);
-  });
-
-  test('treats an empty SENTRY_DSN as disabled', () => {
-    expect(parseEnv({ ...base, SENTRY_DSN: '' }).SENTRY_DSN).toBeUndefined();
+  test('requires a valid web origin for CORS', () => {
+    expect(() => parseEnv({ ...base, WEB_ORIGIN: 'not-a-url' })).toThrow(/WEB_ORIGIN/);
   });
 });

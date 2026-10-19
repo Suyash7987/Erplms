@@ -22,7 +22,6 @@
     "systemStatus": "System status",
     "api": "API",
     "database": "Database",
-    "redis": "Queue / cache",
     "statusOk": "Operational",
     "statusDegraded": "Degraded",
     "statusDown": "Unreachable",

@@ -11,20 +11,19 @@
     "node": ">=22.0.0"
   },
   "scripts": {
+    "dev": "concurrently -k -n api,web -c blue,magenta \"npm:dev:api\" \"npm:dev:web\"",
     "dev:api": "npm run dev -w @erplms/api",
-    "dev:worker": "npm run dev:worker -w @erplms/api",
     "dev:web": "npm run dev -w @erplms/web",
     "lint": "npm run lint --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "build:web": "npm run build -w @erplms/web",
+    "db:migrate": "npm run db:migrate -w @erplms/api",
+    "db:studio": "npm run db:studio -w @erplms/api",
     "format": "prettier --write .",
-    "format:check": "prettier --check .",
-    "infra:up": "docker compose -f infra/docker-compose.yml up -d postgres redis",
-    "infra:down": "docker compose -f infra/docker-compose.yml down",
-    "stack:up": "docker compose -f infra/docker-compose.yml --profile app up --build",
-    "stack:down": "docker compose -f infra/docker-compose.yml --profile app down"
+    "format:check": "prettier --check ."
   },
   "devDependencies": {
+    "concurrently": "^9.2.5",
     "prettier": "^3.6.2"
   }
 }

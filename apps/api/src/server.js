@@ -1,10 +1,6 @@
-require('./instrument');
-
 const { env } = require('./config/env');
 const { logger } = require('./lib/logger');
 const { prisma } = require('./lib/prisma');
-const { closeRedis } = require('./lib/redis');
-const { closeQueues } = require('./lib/queue');
 const { createApp } = require('./app');
 
 const SHUTDOWN_TIMEOUT_MS = 10_000;
@@ -37,7 +33,7 @@ async function shutdown(signal) {
   forceExit.unref();
 
   server.close(async () => {
-    await Promise.allSettled([prisma.$disconnect(), closeRedis(), closeQueues()]);
+    await prisma.$disconnect().catch(() => {});
     logger.info('API stopped');
     process.exit(0);
   });

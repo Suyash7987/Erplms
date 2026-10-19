@@ -1,7 +1,3 @@
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const apiInternalUrl = (process.env.API_INTERNAL_URL || 'http://localhost:4000').replace(/\/$/, '');
 
 const securityHeaders = [
@@ -15,8 +11,6 @@ const securityHeaders = [
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
-  output: 'standalone',
-  outputFileTracingRoot: path.join(__dirname, '../../'),
 
   // The browser only ever talks to the web origin, so auth cookies stay first-party.
   async rewrites() {

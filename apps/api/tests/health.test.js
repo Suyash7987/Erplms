@@ -1,10 +1,8 @@
 const request = require('supertest');
 
 const mockQueryRaw = jest.fn();
-const mockPing = jest.fn();
 
 jest.mock('../src/lib/prisma', () => ({ prisma: { $queryRaw: mockQueryRaw } }));
-jest.mock('../src/lib/redis', () => ({ getRedis: () => ({ ping: mockPing }) }));
 
 const { createApp } = require('../src/app');
 
@@ -18,31 +16,26 @@ describe('health endpoints', () => {
     expect(res.body).toMatchObject({ status: 'ok', service: 'api', timezone: 'Asia/Kolkata' });
     expect(res.body.localTime).toMatch(/\+05:30$/);
     expect(mockQueryRaw).not.toHaveBeenCalled();
-    expect(mockPing).not.toHaveBeenCalled();
   });
 
-  test('GET /api/v1/health returns 200 when database and redis are reachable', async () => {
+  test('GET /api/v1/health returns 200 when the database is reachable', async () => {
     mockQueryRaw.mockResolvedValue([{ '?column?': 1 }]);
-    mockPing.mockResolvedValue('PONG');
 
     const res = await request(app).get('/api/v1/health');
 
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('ok');
     expect(res.body.checks.database.status).toBe('ok');
-    expect(res.body.checks.redis.status).toBe('ok');
   });
 
   test('GET /api/v1/health returns 503 when the database is down', async () => {
     mockQueryRaw.mockRejectedValue(new Error('connection refused'));
-    mockPing.mockResolvedValue('PONG');
 
     const res = await request(app).get('/api/v1/health');
 
     expect(res.status).toBe(503);
     expect(res.body.status).toBe('degraded');
     expect(res.body.checks.database).toMatchObject({ status: 'error' });
-    expect(res.body.checks.redis.status).toBe('ok');
   });
 
   test('rejects unexpected query parameters', async () => {
@@ -88,11 +81,11 @@ describe('security middleware', () => {
     expect(generated.headers['x-request-id']).toMatch(/^[0-9a-f-]{36}$/);
   });
 
-  test('serves the OpenAPI spec', async () => {
-    const res = await request(app).get('/api/v1/docs.json');
+  test('returns the standard error shape for unknown routes', async () => {
+    const res = await request(app).get('/api/v1/does-not-exist');
 
-    expect(res.status).toBe(200);
-    expect(res.body.openapi).toBe('3.0.3');
-    expect(res.body.paths['/health']).toBeDefined();
+    expect(res.status).toBe(404);
+    expect(res.body.error).toMatchObject({ code: 'NOT_FOUND', details: null });
+    expect(res.body.error.stack).toBeUndefined();
   });
 });

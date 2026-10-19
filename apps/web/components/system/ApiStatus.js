@@ -75,10 +75,6 @@ export default function ApiStatus() {
               <span>{t('home.database')}</span>
               <StatusPill status={state.report.checks?.database?.status} />
             </li>
-            <li className="flex items-center justify-between py-2">
-              <span>{t('home.redis')}</span>
-              <StatusPill status={state.report.checks?.redis?.status} />
-            </li>
           </ul>
           <p className="mt-3 text-xs text-slate-500">
             {t('home.version', { version: state.report.version })} ·{' '}

@@ -9,9 +9,6 @@ npm-debug.log*
 .env.*
 !.env.example
 
-# local-disk storage adapter (development uploads)
-apps/api/storage/
-
 .DS_Store
 Thumbs.db
 .vscode/

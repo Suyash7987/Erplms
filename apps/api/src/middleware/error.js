@@ -1,4 +1,3 @@
-const Sentry = require('@sentry/node');
 const { ZodError } = require('zod');
 const { env } = require('../config/env');
 const { AppError, ERROR_CODES } = require('../lib/errors');
@@ -64,7 +63,6 @@ function errorHandler(error, req, res, _next) {
 
   if (appError.status >= 500) {
     log.error({ err: error }, 'unhandled error');
-    if (env.SENTRY_DSN) Sentry.captureException(error);
   } else {
     log.warn({ code: appError.code, status: appError.status }, appError.message);
   }
