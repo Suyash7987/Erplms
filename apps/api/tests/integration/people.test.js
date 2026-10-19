@@ -46,7 +46,7 @@ describe('students', () => {
     expect(res.body.student).toMatchObject({
       name: 'Meena Joshi',
       status: 'active',
-      enrollments: [{ rollNo: 10, status: 'active', academicYear: { name: '2026-27' } }],
+      enrollments: [{ rollNo: 10, status: 'active', academicYear: { name: t.year.name } }],
       guardians: [
         {
           name: 'Prakash Joshi',

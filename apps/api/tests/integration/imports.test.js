@@ -115,7 +115,7 @@ describe('student CSV import', () => {
       invalidRows: 0,
       errors: [],
       summary: { newStudents: 3, newGuardians: 3, siblingLinks: 1, newLogins: 4 },
-      academicYear: { name: '2026-27' },
+      academicYear: { name: t.year.name },
     });
     expect(res.body.preview[0]).toMatchObject({
       row: 2,

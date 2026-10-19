@@ -3,6 +3,7 @@ const request = require('supertest');
 const { withTenant } = require('../../src/lib/prisma');
 const { hashPassword } = require('../../src/lib/password');
 const { syncPermissionCatalog, syncSystemRoles } = require('../../src/modules/roles/roles.service');
+const { schoolYears } = require('./school-year');
 
 const PASSWORD = 'Valid@Pass1';
 const date = (isoDate) => new Date(`${isoDate}T00:00:00.000Z`);
@@ -28,12 +29,13 @@ async function createAuthTenant(label) {
     });
     const roleIds = await syncSystemRoles(tx, instituteId, permissionIds);
 
+    const { current } = schoolYears();
     const year = await tx.academicYear.create({
       data: {
         instituteId,
-        name: '2026-27',
-        startDate: date('2026-04-01'),
-        endDate: date('2027-03-31'),
+        name: current.name,
+        startDate: date(current.startDate),
+        endDate: date(current.endDate),
         status: 'current',
       },
     });
@@ -140,7 +142,15 @@ async function createAuthTenant(label) {
     await addGuardian('parent', ['child1', 'child2']);
     await addGuardian('teacherParent', ['child3']);
 
-    return { instituteId, slug, roleIds, users, students };
+    return {
+      instituteId,
+      slug,
+      roleIds,
+      users,
+      students,
+      year: { id: year.id, name: year.name },
+      sectionId: section.id,
+    };
   });
 }
 

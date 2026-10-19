@@ -1,6 +1,9 @@
 const { createApp } = require('../../src/app');
 const { prisma, withTenant } = require('../../src/lib/prisma');
 const { createAuthTenant, signIn } = require('../helpers/auth-fixtures');
+const { schoolYears } = require('../helpers/school-year');
+
+const SY = schoolYears();
 
 const app = createApp();
 let t;
@@ -28,13 +31,13 @@ describe('academic years', () => {
   test('creates a year, rejects overlaps and bad ranges, and keeps one current year', async () => {
     const next = await admin
       .post('/api/v1/academic-years')
-      .send({ name: '2027-28', startDate: '2027-04-01', endDate: '2028-03-31' });
+      .send({ name: SY.next.name, startDate: SY.next.startDate, endDate: SY.next.endDate });
     expect(next.status).toBe(201);
-    expect(next.body).toMatchObject({ status: 'upcoming', startDate: '2027-04-01' });
+    expect(next.body).toMatchObject({ status: 'upcoming', startDate: SY.next.startDate });
 
     const overlap = await admin
       .post('/api/v1/academic-years')
-      .send({ name: 'Overlap', startDate: '2027-01-01', endDate: '2027-06-30' });
+      .send({ name: 'Overlap', ...SY.overlapping });
     const backwards = await admin
       .post('/api/v1/academic-years')
       .send({ name: '2030-31', startDate: '2031-03-31', endDate: '2030-04-01' });
@@ -49,17 +52,17 @@ describe('academic years', () => {
     expect(switched.body.status).toBe('current');
 
     const years = (await admin.get('/api/v1/academic-years')).body.data;
-    expect(years.filter((y) => y.status === 'current').map((y) => y.name)).toEqual(['2027-28']);
-    expect(years.find((y) => y.name === '2026-27').status).toBe('closed');
+    expect(years.filter((y) => y.status === 'current').map((y) => y.name)).toEqual([SY.next.name]);
+    expect(years.find((y) => y.name === SY.current.name).status).toBe('closed');
 
     const sequence = await inTenant((tx) =>
       tx.receiptSequence.findFirst({ where: { academicYearId: next.body.id } }),
     );
     expect(sequence).toMatchObject({ lastValue: 0 });
 
-    // Restore 2026-27 as current for the remaining tests.
+    // Restore the current school year for the remaining tests.
     await admin.post(
-      `/api/v1/academic-years/${years.find((y) => y.name === '2026-27').id}/make-current`,
+      `/api/v1/academic-years/${years.find((y) => y.name === SY.current.name).id}/make-current`,
     );
   });
 
@@ -72,14 +75,14 @@ describe('academic years', () => {
     );
     expect(current).toBe(1);
 
-    const y2026 = years.find((y) => y.name === '2026-27');
-    await admin.post(`/api/v1/academic-years/${y2026.id}/make-current`);
+    const currentYear = years.find((y) => y.name === SY.current.name);
+    await admin.post(`/api/v1/academic-years/${currentYear.id}/make-current`);
   });
 
   test('a year with sections cannot be deleted; an unused one can', async () => {
     const years = (await admin.get('/api/v1/academic-years')).body.data;
-    const used = years.find((y) => y.name === '2026-27');
-    const unused = years.find((y) => y.name === '2027-28');
+    const used = years.find((y) => y.name === SY.current.name);
+    const unused = years.find((y) => y.name === SY.next.name);
 
     expect((await admin.delete(`/api/v1/academic-years/${used.id}`)).status).toBe(409);
     expect((await admin.delete(`/api/v1/academic-years/${unused.id}`)).status).toBe(204);
