@@ -110,6 +110,37 @@ password change; parents see the DPDP consent screen on their first sign-in.
 | `GET /api/v1/roles`, `/roles/permissions`   | `roles.view`           | Roles and the permission catalog     |
 | `POST /api/v1/roles`, `PUT .../permissions` | `roles.manage`         | Custom roles and their permissions   |
 
+## Institute setup and academic structure
+
+Admins (permission `institute.manage`) get a first-time **setup wizard** at `/admin/setup`: school
+details and UI labels, current academic year, classes (one click for Class 1-12 with grade bands),
+sections for every class, and subjects. It can be resumed at any step. Afterwards, `/admin/classes`
+lets you open each section to set its class teacher and which teacher teaches each subject.
+
+- **Academic years:** dates must not overlap; exactly one year is `current` (changes are serialised
+  with a row lock). Each year gets its own receipt counter for fee collection.
+- **Levels** (classes) are permanent and have an optional grade band (primary 1-5, middle 6-8,
+  secondary 9-10, senior 11-12). **Sections** belong to one level and one academic year.
+- **Labels** such as "Class"/"Section" are institute settings (`settings.labels`), so coaching
+  "batches" can reuse the same model. Module switches live in `enabled_modules`.
+- Records in use cannot be deleted (years with sections, classes with sections, sections with
+  students, subjects taught somewhere); mark them inactive instead.
+
+| Endpoint                                           | Permission         | What                                    |
+| -------------------------------------------------- | ------------------ | --------------------------------------- |
+| `GET/PATCH /api/v1/institute`                      | `institute.*`      | Profile, board, settings, module flags  |
+| `GET /api/v1/institute/setup`                      | `institute.view`   | Wizard progress                         |
+| `POST /api/v1/institute/setup/profile`             | `institute.manage` | Save school details (wizard step 1)     |
+| `POST /api/v1/institute/setup/complete`            | `institute.manage` | Mark setup complete                     |
+| `GET/POST /api/v1/academic-years`                  | `academics.*`      | List / create (optionally make current) |
+| `PATCH/DELETE /api/v1/academic-years/:id`          | `academics.manage` | Edit dates / delete an unused year      |
+| `POST /api/v1/academic-years/:id/make-current`     | `academics.manage` | Switch the current year                 |
+| `GET/POST /api/v1/levels`, `POST /levels/range`    | `academics.*`      | Classes; bulk "Class 1-12"              |
+| `GET/POST /api/v1/sections`, `POST /sections/grid` | `academics.*`      | Sections of a year; bulk A, B, ...      |
+| `GET/PUT /api/v1/sections/:id/subjects`            | `academics.*`      | Subjects and their teachers per section |
+| `GET/POST/PATCH/DELETE /api/v1/subjects`           | `academics.*`      | Subjects (single or bulk create)        |
+| `GET /api/v1/staff`                                | `staff.view`       | Staff search for teacher pickers        |
+
 ## Useful URLs
 
 | URL                                      | What                                       |
@@ -184,7 +215,7 @@ Mumbai) for the database and backups, because the system stores children's perso
 - [x] M1 Repo scaffolding
 - [x] M2 Foundation schema, RLS, tenant isolation
 - [x] M3 Auth + RBAC
-- [ ] M4 Institute setup and academic structure
+- [x] M4 Institute setup and academic structure
 - [ ] M5 Students, guardians, staff (+ bulk import)
 - [ ] M6 Attendance
 - [ ] M7 Timetable
