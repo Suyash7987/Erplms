@@ -141,6 +141,38 @@ lets you open each section to set its class teacher and which teacher teaches ea
 | `GET/POST/PATCH/DELETE /api/v1/subjects`           | `academics.*`      | Subjects (single or bulk create)        |
 | `GET /api/v1/staff`                                | `staff.view`       | Staff search for teacher pickers        |
 
+## Students, guardians, staff and CSV import
+
+- **Students** are permanent records; leaving is a status change (`transferred`, `passed_out`, `left`
+  close the year's enrollment and disable the student's own login). Per-year placement is a
+  `student_enrollments` row (`PUT /students/:id/enrollment`).
+- **Guardians are matched by mobile number.** Adding a child with a parent's existing number links
+  the siblings to the same guardian and login. A teacher's number simply gains the parent role.
+- **Logins** are created for every new guardian (and optionally older students or staff) with a
+  temporary password that is returned **once** (`Cache-Control: no-store`) and must be changed at
+  first sign-in. Front office can create parent/student logins; staff roles need `staff.create` and
+  nobody can grant permissions they do not hold. Marking staff `inactive`/`left` removes their staff
+  roles (a parent role stays).
+- **CSV import** (`/admin/import`): download the template, choose a CSV (Excel: "Save as CSV UTF-8"),
+  check it (dry run with preview and row-level errors), then import. Up to 2,000 rows and 1 MB per
+  file; the file is read in the browser and parsed in memory on the server (no uploads). Imports are
+  all-or-nothing in one transaction; rows with errors block the import unless you choose to skip
+  them. Dates may be `DD-MM-YYYY`. A 2,000-row file with ~3,000 new parent logins takes ~15 s.
+  `.xlsx` files are not read directly (that needs an extra library).
+- Temporary passwords are hashed with a lower bcrypt cost (6) because they are random 10-character
+  secrets that must be replaced; passwords people choose use `BCRYPT_ROUNDS`.
+
+| Endpoint                                           | Permission                             |
+| -------------------------------------------------- | -------------------------------------- |
+| `GET/POST /api/v1/students`, `GET/PATCH /:id`      | `students.view/create/update`          |
+| `POST /api/v1/students/:id/status`                 | `students.archive`                     |
+| `PUT /api/v1/students/:id/enrollment`              | `students.update`                      |
+| `POST/PATCH/DELETE /api/v1/students/:id/guardians` | `students.update` + `guardians.manage` |
+| `GET /api/v1/guardians`, `GET/PATCH /:id`          | `guardians.view/manage`                |
+| `GET/POST /api/v1/staff`, `GET/PATCH /:id`         | `staff.view/create/update`             |
+| `GET /api/v1/imports/:type/template`               | `students.import` / `staff.import`     |
+| `POST /api/v1/imports/students` or `/staff`        | `students.import` / `staff.import`     |
+
 ## Useful URLs
 
 | URL                                      | What                                       |
@@ -216,7 +248,7 @@ Mumbai) for the database and backups, because the system stores children's perso
 - [x] M2 Foundation schema, RLS, tenant isolation
 - [x] M3 Auth + RBAC
 - [x] M4 Institute setup and academic structure
-- [ ] M5 Students, guardians, staff (+ bulk import)
+- [x] M5 Students, guardians, staff (+ bulk import)
 - [ ] M6 Attendance
 - [ ] M7 Timetable
 - [ ] M8 Notices and notifications
