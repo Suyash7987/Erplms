@@ -1,6 +1,7 @@
 import './globals.css';
 import { getTranslator } from '@/lib/i18n/server';
 import { I18nProvider } from '@/components/providers/I18nProvider';
+import { AuthProvider } from '@/components/providers/AuthProvider';
 import ServiceWorkerRegister from '@/components/pwa/ServiceWorkerRegister';
 
 export async function generateMetadata() {
@@ -28,7 +29,7 @@ export default async function RootLayout({ children }) {
     <html lang={locale}>
       <body className="min-h-dvh bg-slate-50 font-sans text-slate-900 antialiased">
         <I18nProvider locale={locale} messages={messages}>
-          {children}
+          <AuthProvider>{children}</AuthProvider>
         </I18nProvider>
         <ServiceWorkerRegister />
       </body>

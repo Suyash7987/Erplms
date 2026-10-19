@@ -29,6 +29,88 @@
     "checkedAt": "Checked at {time}",
     "signIn": "Sign in"
   },
+  "auth": {
+    "signInTitle": "Sign in",
+    "signInSubtitle": "Use the mobile number registered with your school.",
+    "instituteCode": "Institute code",
+    "instituteCodeHint": "Your school gives you this code. It is remembered on this phone.",
+    "phone": "Mobile number",
+    "password": "Password",
+    "showPassword": "Show",
+    "hidePassword": "Hide",
+    "signIn": "Sign in",
+    "signingIn": "Signing in…",
+    "signOut": "Sign out",
+    "forgotPassword": "Forgot your password? Ask your school office to reset it.",
+    "errors": {
+      "invalidCredentials": "The institute code, mobile number or password is not correct.",
+      "locked": "Too many wrong attempts. Try again in {minutes} min, or ask the school office to reset your password.",
+      "disabled": "This account is disabled. Please contact the school office.",
+      "rateLimited": "Too many attempts. Please wait a few minutes and try again.",
+      "noRole": "This account has no access yet. Please contact the school office.",
+      "sessionExpired": "Your session has ended. Please sign in again."
+    },
+    "invalid": {
+      "instituteCode": "Enter the institute code (letters, numbers and dashes).",
+      "phone": "Enter a valid 10-digit mobile number.",
+      "password": "Enter your password."
+    }
+  },
+  "password": {
+    "title": "Set a new password",
+    "subtitle": "Choose a new password for your account.",
+    "subtitleRequired": "For your security, set your own password before you continue.",
+    "current": "Current (or temporary) password",
+    "new": "New password",
+    "confirm": "Confirm new password",
+    "save": "Save password",
+    "saving": "Saving…",
+    "rulesTitle": "Your new password needs:",
+    "ruleMet": "done",
+    "rules": {
+      "length": "8 to 64 characters",
+      "lower": "A lowercase letter (a-z)",
+      "upper": "An uppercase letter (A-Z)",
+      "digit": "A number (0-9)",
+      "symbol": "A symbol such as @ # $ %",
+      "match": "Both new passwords match"
+    },
+    "errors": {
+      "wrongCurrent": "Your current password is not correct.",
+      "containsPhone": "Do not use your mobile number in the password.",
+      "sameAsCurrent": "Choose a password different from the current one.",
+      "invalid": "This password does not meet the rules above."
+    }
+  },
+  "consent": {
+    "title": "Consent for your child's data",
+    "subtitle": "Please read this once. You can ask the school to withdraw it at any time.",
+    "p1": "{school} uses this app to manage your child's school records: name, class, date of birth, attendance, fees, timetable and notices, along with your name and mobile number.",
+    "p2": "This information is used only to run the school and keep you informed. It is not sold or used for advertising.",
+    "p3": "It is visible only to school staff who need it for their work, and to you as the parent or guardian.",
+    "p4": "The data is stored in India and kept for as long as your child studies here and the law requires.",
+    "p5": "Under the Digital Personal Data Protection Act, 2023 you can ask the school to see, correct or erase this data, or withdraw this consent, by contacting the school office.",
+    "forChildren": "This consent is for:",
+    "agreeLabel": "I am the parent or lawful guardian and I give consent as described above.",
+    "agree": "I agree",
+    "saving": "Saving…",
+    "decline": "Not now (sign out)",
+    "changed": "The consent text was updated. Please read it again."
+  },
+  "profile": {
+    "title": "Choose a profile",
+    "subtitle": "Your account has more than one role. You can switch at any time.",
+    "active": "Current",
+    "switching": "Opening…",
+    "switch": "Switch",
+    "parentOf": "Parent of {name}",
+    "studentNamed": "Student · {name}"
+  },
+  "shell": {
+    "accountMenu": "Account",
+    "welcome": "Welcome, {name}",
+    "dashboardSoon": "Your dashboard will appear here in a later release."
+  },
   "nav": {
     "login": "Sign in",
     "admin": "Admin",

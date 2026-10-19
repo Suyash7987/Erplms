@@ -29,6 +29,22 @@
   .btn-secondary {
     @apply btn border border-slate-300 bg-white text-slate-800 hover:bg-slate-50;
   }
+
+  .label {
+    @apply mb-1 block text-sm font-medium text-slate-700;
+  }
+
+  .input {
+    @apply block min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 placeholder:text-slate-400 aria-[invalid=true]:border-red-500;
+  }
+
+  .field-error {
+    @apply mt-1 text-sm text-red-700;
+  }
+
+  .alert-error {
+    @apply rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

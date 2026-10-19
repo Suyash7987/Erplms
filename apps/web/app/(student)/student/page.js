@@ -1,5 +1,5 @@
-import ComingSoon from '@/components/ui/ComingSoon';
+import RoleHome from '@/components/layout/RoleHome';
 
 export default function StudentHomePage() {
-  return <ComingSoon titleKey="nav.student" />;
+  return <RoleHome titleKey="nav.student" />;
 }

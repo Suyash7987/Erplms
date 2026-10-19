@@ -1,5 +1,5 @@
-import ComingSoon from '@/components/ui/ComingSoon';
+import RoleHome from '@/components/layout/RoleHome';
 
 export default function AdminHomePage() {
-  return <ComingSoon titleKey="nav.admin" />;
+  return <RoleHome titleKey="nav.admin" />;
 }
