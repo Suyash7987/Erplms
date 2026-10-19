@@ -19,7 +19,7 @@ function fromPrismaError(error) {
         fields: error.meta?.target,
       });
     case 'P2003':
-      return AppError.conflict('Related record constraint failed', {
+      return AppError.conflict('This record is linked to other records', {
         field: error.meta?.field_name,
       });
     case 'P2025':
