@@ -7,7 +7,7 @@ import { useAuth } from '@/components/providers/AuthProvider';
 import { nextPathFor } from '@/lib/auth-routes';
 import { ApiError } from '@/lib/api';
 import AuthCard from './AuthCard';
-import { FormField, PasswordField } from './FormField';
+import { FormField, PasswordField } from '@/components/ui/FormField';
 import { authErrorMessage } from './authErrors';
 
 // The institute code is remembered on the device so parents only type it once.

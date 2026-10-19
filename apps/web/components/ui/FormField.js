@@ -37,6 +37,59 @@ export function FormField({ label, error, hint, type = 'text', ...inputProps }) 
   );
 }
 
+/** Labelled native select (best on mobile). `options` = [{ value, label }]. */
+export function SelectField({ label, error, hint, options, placeholder, ...selectProps }) {
+  const id = useId();
+  return (
+    <div>
+      <label htmlFor={id} className="label">
+        {label}
+      </label>
+      <select
+        id={id}
+        className="input"
+        aria-invalid={Boolean(error)}
+        aria-describedby={error ? `${id}-error` : hint ? `${id}-hint` : undefined}
+        {...selectProps}
+      >
+        {placeholder !== undefined ? <option value="">{placeholder}</option> : null}
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+      {hint ? (
+        <p id={`${id}-hint`} className="mt-1 text-xs text-slate-500">
+          {hint}
+        </p>
+      ) : null}
+      {error ? (
+        <p id={`${id}-error`} className="field-error">
+          {error}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+/** Large tap-target checkbox with its label. */
+export function CheckboxField({ label, description, ...inputProps }) {
+  return (
+    <label className="flex min-h-11 items-start gap-3 text-sm text-slate-800">
+      <input
+        type="checkbox"
+        className="mt-0.5 h-5 w-5 shrink-0 rounded border-slate-300 text-brand-600"
+        {...inputProps}
+      />
+      <span>
+        <span className="font-medium">{label}</span>
+        {description ? <span className="block text-slate-500">{description}</span> : null}
+      </span>
+    </label>
+  );
+}
+
 /** Password input with a show/hide toggle (handy on small phone keyboards). */
 export function PasswordField({ label, error, ...inputProps }) {
   const { t } = useI18n();

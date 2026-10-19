@@ -10,13 +10,28 @@
     "comingSoon": "Coming soon",
     "comingSoonBody": "This section will be available in a later release.",
     "language": "Language",
-    "empty": "Nothing here yet."
+    "empty": "Nothing here yet.",
+    "saving": "Saving…",
+    "saved": "Saved.",
+    "deleted": "Deleted.",
+    "add": "Add",
+    "edit": "Edit",
+    "delete": "Delete",
+    "save": "Save",
+    "cancel": "Cancel",
+    "back": "Back",
+    "actions": "Actions",
+    "active": "Active",
+    "inactive": "Inactive",
+    "activate": "Activate",
+    "deactivate": "Deactivate"
   },
   "errors": {
     "generic": "Something went wrong.",
     "network": "Could not reach the server. Check your internet connection.",
     "notFoundTitle": "Page not found",
-    "notFoundBody": "The page you are looking for does not exist or has moved."
+    "notFoundBody": "The page you are looking for does not exist or has moved.",
+    "forbidden": "You do not have permission to open this page."
   },
   "home": {
     "systemStatus": "System status",
@@ -109,13 +124,181 @@
   "shell": {
     "accountMenu": "Account",
     "welcome": "Welcome, {name}",
-    "dashboardSoon": "Your dashboard will appear here in a later release."
+    "dashboardSoon": "Your dashboard will appear here in a later release.",
+    "mainMenu": "Main menu"
   },
   "nav": {
     "login": "Sign in",
     "admin": "Admin",
     "teacher": "Teacher",
     "student": "Student",
-    "parent": "Parent"
+    "parent": "Parent",
+    "home": "Home",
+    "setup": "Setup",
+    "classes": "Classes",
+    "subjects": "Subjects",
+    "academicYears": "Academic years",
+    "settings": "Settings"
+  },
+  "labels": {
+    "level": "Class",
+    "section": "Section"
+  },
+  "admin": {
+    "levelsCount": "{level} (total)",
+    "sectionsCount": "{section} this year"
+  },
+  "modules": {
+    "attendance": "Attendance",
+    "leaves": "Leave requests",
+    "timetable": "Timetable",
+    "notices": "Notices",
+    "fees": "Fees"
+  },
+  "setup": {
+    "bannerTitle": "Finish setting up your school",
+    "bannerBody": "Add the academic year, classes, sections and subjects so teachers and parents can start using the app.",
+    "bannerAction": "Continue setup",
+    "currentYear": "Current year",
+    "notSet": "Not set",
+    "title": "School setup",
+    "subtitle": "A few short steps. You can come back and change anything later.",
+    "steps": "Setup steps",
+    "step": {
+      "profile": "School details",
+      "academicYear": "Academic year",
+      "levels": "Classes",
+      "sections": "Sections",
+      "subjects": "Subjects",
+      "finish": "Finish"
+    },
+    "help": {
+      "profile": "Check your school's name and board, and choose the words the app uses for classes and sections.",
+      "academicYear": "The academic year that is running now. Attendance, fees and timetables belong to a year.",
+      "levels": "Create the classes your school teaches. Most schools need 1 to 12.",
+      "sections": "Create the sections (divisions) of each class for this academic year.",
+      "subjects": "Pick the subjects your school teaches. You can add more later.",
+      "finish": "Review the steps and finish. Next, assign subjects and teachers to each section."
+    },
+    "saveContinue": "Save and continue",
+    "continue": "Continue",
+    "yearReady": "Current academic year: {name} ({startDate} to {endDate}).",
+    "manageYears": "Manage academic years",
+    "from": "From",
+    "to": "To",
+    "createLevels": "Create {level} {from} to {to}",
+    "existing": "Already created",
+    "levelsMore": "Need other {level} names (e.g. Nursery, LKG)? Add them later on the Classes page.",
+    "needYear": "Set up the academic year first.",
+    "sectionsCreated": "{created} created, {skipped} already existed.",
+    "sectionNames": "{section} names",
+    "sectionNamesHint": "Separate with commas, e.g. A, B, C",
+    "forLevels": "Create them in these {level} groups:",
+    "createSections": "Create {section} for {year}",
+    "alreadyAdded": "Already added",
+    "completed": "Setup is complete.",
+    "nextSteps": "Next: open each {level} and {section} to set its subjects, teachers and class teacher.",
+    "goToClasses": "Go to {level} list",
+    "finish": "Finish setup"
+  },
+  "settings": {
+    "description": "Your institute code is {code}. Staff and parents type it when they sign in.",
+    "profile": "School details",
+    "name": "School name",
+    "board": "Board",
+    "boardName": "Board name (optional)",
+    "boardNameHint": "For example \"Maharashtra State Board\".",
+    "phone": "Office phone",
+    "email": "Office email",
+    "address": "Address",
+    "city": "City",
+    "state": "State",
+    "pincode": "PIN code",
+    "labels": "Words used in the app",
+    "levelLabel": "Name for a class",
+    "levelLabelHint": "e.g. Class, Standard, Grade or Batch",
+    "sectionLabel": "Name for a section",
+    "attendance": "Attendance and receipts",
+    "editWindowDays": "Days a teacher can edit attendance",
+    "editWindowHint": "0 means only on the same day.",
+    "sessionsPerDay": "Attendance is taken",
+    "onceADay": "Once a day",
+    "twiceADay": "Twice a day (morning and afternoon)",
+    "receiptPrefix": "Receipt number prefix",
+    "receiptPrefixHint": "Letters, digits, / or -. e.g. DPS",
+    "modules": "Modules",
+    "modulesHelp": "Switched-off modules are hidden from everyone and their pages are blocked."
+  },
+  "years": {
+    "description": "Students, attendance, fees and timetables belong to an academic year. Only one year is current.",
+    "add": "Add academic year",
+    "edit": "Edit academic year",
+    "name": "Name",
+    "nameHint": "For example 2026-27",
+    "startDate": "Starts on",
+    "endDate": "Ends on",
+    "dates": "Dates",
+    "status": "Status",
+    "statuses": {
+      "current": "Current",
+      "upcoming": "Upcoming",
+      "closed": "Closed"
+    },
+    "sections": "Sections",
+    "makeCurrent": "Make current",
+    "makeCurrentNow": "Make this the current year now",
+    "madeCurrent": "Current academic year changed.",
+    "confirmDelete": "Delete academic year {name}?",
+    "empty": "No academic years yet."
+  },
+  "classes": {
+    "title": "{level} and {section}",
+    "description": "Each {level} has {section} for every academic year. Open a {section} to set its subjects and teachers.",
+    "noYear": "Create an academic year first.",
+    "yearPicker": "Academic year",
+    "newLevel": "New {level}",
+    "band": "Stage",
+    "noBand": "No stage",
+    "bands": {
+      "primary": "Primary (1-5)",
+      "middle": "Middle (6-8)",
+      "secondary": "Secondary (9-10)",
+      "senior": "Senior secondary (11-12)"
+    },
+    "noLevels": "No {level} yet.",
+    "confirmDeleteLevel": "Delete {name}?",
+    "sectionSummary": "{students} students · {subjects} subjects",
+    "noSections": "No {section} in this academic year yet.",
+    "newSection": "New {section}"
+  },
+  "sections": {
+    "capacity": "Capacity"
+  },
+  "sectionDetail": {
+    "description": "Academic year {year} · {students} students",
+    "details": "{section} details",
+    "name": "Name",
+    "room": "Room",
+    "classTeacher": "Class teacher",
+    "noTeacher": "Not assigned",
+    "active": "Active",
+    "subjectsTitle": "Subjects and teachers",
+    "subjectsHelp": "Tick the subjects taught here and choose who teaches each one.",
+    "teacherFor": "Teacher for {subject}",
+    "saveSubjects": "Save subjects",
+    "subjectsSaved": "Subjects and teachers saved.",
+    "confirmDelete": "Delete this {section}?"
+  },
+  "subjects": {
+    "description": "Subjects taught in your school. Inactive subjects are hidden from new timetables.",
+    "add": "Add subject",
+    "edit": "Edit subject",
+    "name": "Subject name",
+    "code": "Code",
+    "codeHint": "Short and unique, e.g. MATH",
+    "usedIn": "Sections",
+    "empty": "No subjects yet.",
+    "codeExists": "A subject with this code already exists.",
+    "confirmDelete": "Delete {name}?"
   }
 }

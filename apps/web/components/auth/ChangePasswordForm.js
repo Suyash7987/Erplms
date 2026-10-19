@@ -8,7 +8,7 @@ import { LoadingState } from '@/components/ui/StateViews';
 import { apiFetch, ApiError } from '@/lib/api';
 import { nextPathFor } from '@/lib/auth-routes';
 import AuthCard from './AuthCard';
-import { PasswordField } from './FormField';
+import { PasswordField } from '@/components/ui/FormField';
 import SignOutButton from './SignOutButton';
 import { authErrorMessage } from './authErrors';
 
@@ -116,7 +116,7 @@ export default function ChangePasswordForm() {
           <ul className="grid gap-1 text-sm">
             {[...results, ['match', matches]].map(([key, ok]) => (
               <li key={key} className={ok ? 'text-emerald-700' : 'text-slate-500'}>
-                <span aria-hidden="true">{ok ? '✓ ' : '○ '}</span>
+                <span aria-hidden="true">{ok ? 'âœ“ ' : 'â—‹ '}</span>
                 {t(`password.rules.${key}`)}
                 <span className="sr-only">{ok ? ` (${t('password.ruleMet')})` : ''}</span>
               </li>
