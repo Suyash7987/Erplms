@@ -1,6 +1,14 @@
-// Prisma schema for the School ERP.
-// Models are added in M2 (foundation schema). Every tenant table will carry
-// institute_id and be protected by Postgres Row Level Security (see rls.sql in M2).
+// Prisma schema for the School ERP (Phase 1).
+//
+// Conventions
+// - Every tenant table has institute_id (NOT NULL, first column of its compound indexes) and is
+//   protected by Postgres Row Level Security (prisma/rls.sql). `permissions` is the only global table.
+// - Required relations between tenant tables are composite foreign keys on (institute_id, <id>), so the
+//   database itself rejects a row that points at another institute's record. Optional references are
+//   single-column; services must load them through the tenant transaction before linking.
+// - Money is BIGINT paise. Calendar dates are DATE (IST calendar days); instants are TIMESTAMPTZ (UTC).
+// - Actor columns (*_by_user_id) are plain UUIDs so ledgers and audit rows never depend on user rows.
+// - CHECK constraints and append-only triggers live in SQL migrations (Prisma cannot express them).
 
 generator client {
   provider = "prisma-client-js"
@@ -9,4 +17,1119 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum Board {
+  CBSE
+  ICSE
+  STATE
+
+  @@map("board")
+}
+
+enum InstituteStatus {
+  active
+  suspended
+
+  @@map("institute_status")
+}
+
+enum UserStatus {
+  active
+  disabled
+
+  @@map("user_status")
+}
+
+enum AcademicYearStatus {
+  upcoming
+  current
+  closed
+
+  @@map("academic_year_status")
+}
+
+/// Grade band of a level. Optional so non-school institutes (coaching batches, semesters) can reuse levels.
+enum LevelBand {
+  primary
+  middle
+  secondary
+  senior
+
+  @@map("level_band")
+}
+
+enum Gender {
+  male
+  female
+  other
+
+  @@map("gender")
+}
+
+/// Students are never hard-deleted; leaving the institute is a status change.
+enum StudentStatus {
+  active
+  inactive
+  transferred
+  passed_out
+  left
+
+  @@map("student_status")
+}
+
+enum EnrollmentStatus {
+  active
+  promoted
+  detained
+  transferred
+  left
+  completed
+
+  @@map("enrollment_status")
+}
+
+enum GuardianRelation {
+  father
+  mother
+  guardian
+  grandparent
+  sibling
+  other
+
+  @@map("guardian_relation")
+}
+
+enum StaffType {
+  teaching
+  non_teaching
+
+  @@map("staff_type")
+}
+
+enum StaffStatus {
+  active
+  inactive
+  left
+
+  @@map("staff_status")
+}
+
+enum AttendanceSessionType {
+  full_day
+  morning
+  afternoon
+
+  @@map("attendance_session_type")
+}
+
+enum AttendanceStatus {
+  present
+  absent
+  late
+  half_day
+  on_leave
+
+  @@map("attendance_status")
+}
+
+enum LeaveStatus {
+  pending
+  approved
+  rejected
+  cancelled
+
+  @@map("leave_status")
+}
+
+enum LateFineType {
+  none
+  fixed
+  per_day
+
+  @@map("late_fine_type")
+}
+
+enum InvoiceStatus {
+  unpaid
+  partially_paid
+  paid
+  cancelled
+
+  @@map("invoice_status")
+}
+
+enum InvoiceItemKind {
+  fee
+  late_fine
+
+  @@map("invoice_item_kind")
+}
+
+enum ConcessionType {
+  sibling
+  staff_ward
+  merit
+  need_based
+  other
+
+  @@map("concession_type")
+}
+
+enum PaymentMode {
+  cash
+  cheque
+  upi_manual
+  bank_transfer
+
+  @@map("payment_mode")
+}
+
+enum NoticeStatus {
+  draft
+  published
+  archived
+
+  @@map("notice_status")
+}
+
+// ---------------------------------------------------------------------------
+// Tenant and access
+// ---------------------------------------------------------------------------
+
+model Institute {
+  id             String          @id @default(uuid()) @db.Uuid
+  name           String          @db.VarChar(200)
+  /// Short code users type (or the app remembers) at login to pick the institute.
+  slug           String          @unique @db.VarChar(60)
+  board          Board
+  /// Display name of the board, e.g. "Maharashtra State Board" when board = STATE.
+  boardName      String?         @map("board_name") @db.VarChar(120)
+  /// Institute preferences, including configurable UI labels (settings.labels.level = "Class" / "Batch").
+  settings       Json            @default("{}")
+  /// Module flags, e.g. { "attendance": true, "fees": false }. Disabled modules return 403 and are hidden.
+  enabledModules Json            @default("{\"attendance\":true,\"timetable\":true,\"notices\":true,\"fees\":true,\"leaves\":true}") @map("enabled_modules")
+  timezone       String          @default("Asia/Kolkata") @db.VarChar(64)
+  phone          String?         @db.VarChar(15)
+  email          String?         @db.VarChar(254)
+  addressLine    String?         @map("address_line") @db.VarChar(300)
+  city           String?         @db.VarChar(100)
+  state          String?         @db.VarChar(100)
+  pincode        String?         @db.VarChar(10)
+  status         InstituteStatus @default(active)
+  createdAt      DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  users              User[]
+  refreshTokens      RefreshToken[]
+  roles              Role[]
+  rolePermissions    RolePermission[]
+  userRoles          UserRole[]
+  auditLogs          AuditLog[]
+  consents           Consent[]
+  academicYears      AcademicYear[]
+  levels             Level[]
+  sections           Section[]
+  subjects           Subject[]
+  sectionSubjects    SectionSubject[]
+  students           Student[]
+  enrollments        StudentEnrollment[]
+  guardians          Guardian[]
+  studentGuardians   StudentGuardian[]
+  staff              Staff[]
+  attendanceSessions AttendanceSession[]
+  attendanceRecords  AttendanceRecord[]
+  leaves             Leave[]
+  periods            Period[]
+  timetableSlots     TimetableSlot[]
+  feeHeads           FeeHead[]
+  feeStructures      FeeStructure[]
+  feeStructureItems  FeeStructureItem[]
+  invoices           StudentFeeInvoice[]
+  invoiceItems       InvoiceItem[]
+  concessions        Concession[]
+  payments           Payment[]
+  paymentReversals   PaymentReversal[]
+  receiptSequences   ReceiptSequence[]
+  notices            Notice[]
+  noticeReads        NoticeRead[]
+  notifications      Notification[]
+
+  @@map("institutes")
+}
+
+model User {
+  id                 String     @id @default(uuid()) @db.Uuid
+  instituteId        String     @map("institute_id") @db.Uuid
+  /// Digits only, e.g. 9876543210. One phone = one user per institute; it can hold several roles.
+  phone              String     @db.VarChar(15)
+  name               String     @db.VarChar(150)
+  email              String?    @db.VarChar(254)
+  passwordHash       String     @map("password_hash") @db.VarChar(100)
+  mustChangePassword Boolean    @default(true) @map("must_change_password")
+  passwordChangedAt  DateTime?  @map("password_changed_at") @db.Timestamptz(3)
+  failedAttempts     Int        @default(0) @map("failed_attempts")
+  lockedUntil        DateTime?  @map("locked_until") @db.Timestamptz(3)
+  lastLoginAt        DateTime?  @map("last_login_at") @db.Timestamptz(3)
+  status             UserStatus @default(active)
+  createdAt          DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  institute     Institute      @relation(fields: [instituteId], references: [id])
+  refreshTokens RefreshToken[]
+  userRoles     UserRole[]
+  student       Student?
+  staff         Staff?
+  guardian      Guardian?
+  noticeReads   NoticeRead[]
+  notifications Notification[]
+
+  @@unique([instituteId, phone])
+  @@unique([instituteId, id])
+  @@index([instituteId, status])
+  @@map("users")
+}
+
+model RefreshToken {
+  id           String    @id @default(uuid()) @db.Uuid
+  instituteId  String    @map("institute_id") @db.Uuid
+  userId       String    @map("user_id") @db.Uuid
+  /// SHA-256 hex of the opaque token; the raw token is only ever in the httpOnly cookie.
+  tokenHash    String    @unique @map("token_hash") @db.Char(64)
+  /// All tokens from one login share a family; reuse of a rotated token revokes the family.
+  familyId     String    @map("family_id") @db.Uuid
+  expiresAt    DateTime  @map("expires_at") @db.Timestamptz(3)
+  revokedAt    DateTime? @map("revoked_at") @db.Timestamptz(3)
+  replacedById String?   @map("replaced_by_id") @db.Uuid
+  createdByIp  String?   @map("created_by_ip") @db.VarChar(45)
+  userAgent    String?   @map("user_agent") @db.VarChar(300)
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  institute Institute @relation(fields: [instituteId], references: [id])
+  user      User      @relation(fields: [instituteId, userId], references: [instituteId, id], onDelete: Cascade)
+
+  @@index([instituteId, userId])
+  @@index([instituteId, familyId])
+  @@map("refresh_tokens")
+}
+
+model Role {
+  id          String   @id @default(uuid()) @db.Uuid
+  instituteId String   @map("institute_id") @db.Uuid
+  /// admin, teacher, student, parent, accountant, front_office, or a custom code.
+  code        String   @db.VarChar(50)
+  name        String   @db.VarChar(100)
+  description String?  @db.VarChar(300)
+  /// System roles are created for every institute and cannot be deleted.
+  isSystem    Boolean  @default(false) @map("is_system")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  institute       Institute        @relation(fields: [instituteId], references: [id])
+  rolePermissions RolePermission[]
+  userRoles       UserRole[]
+
+  @@unique([instituteId, code])
+  @@unique([instituteId, id])
+  @@map("roles")
+}
+
+/// Global permission catalog (not tenant data), e.g. fees.collect, attendance.mark.
+model Permission {
+  id          String   @id @default(uuid()) @db.Uuid
+  code        String   @unique @db.VarChar(80)
+  /// Module key matched against institutes.enabled_modules (core modules are always on).
+  module      String   @db.VarChar(40)
+  description String   @db.VarChar(200)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  rolePermissions RolePermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  instituteId  String   @map("institute_id") @db.Uuid
+  roleId       String   @map("role_id") @db.Uuid
+  permissionId String   @map("permission_id") @db.Uuid
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  institute  Institute  @relation(fields: [instituteId], references: [id])
+  role       Role       @relation(fields: [instituteId, roleId], references: [instituteId, id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([instituteId, roleId, permissionId])
+  @@index([permissionId])
+  @@map("role_permissions")
+}
+
+model UserRole {
+  id          String   @id @default(uuid()) @db.Uuid
+  instituteId String   @map("institute_id") @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  roleId      String   @map("role_id") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  institute Institute @relation(fields: [instituteId], references: [id])
+  user      User      @relation(fields: [instituteId, userId], references: [instituteId, id], onDelete: Cascade)
+  role      Role      @relation(fields: [instituteId, roleId], references: [instituteId, id])
+
+  @@unique([instituteId, userId, roleId])
+  @@index([instituteId, roleId])
+  @@map("user_roles")
+}
+
+/// Append-only (UPDATE/DELETE are rejected by a trigger).
+model AuditLog {
+  id          String   @id @default(uuid()) @db.Uuid
+  instituteId String   @map("institute_id") @db.Uuid
+  userId      String?  @map("user_id") @db.Uuid
+  /// e.g. auth.login, payment.create, attendance.update, role.assign
+  action      String   @db.VarChar(60)
+  entity      String   @db.VarChar(60)
+  entityId    String?  @map("entity_id") @db.VarChar(64)
+  before      Json?
+  after       Json?
+  ip          String?  @db.VarChar(45)
+  userAgent   String?  @map("user_agent") @db.VarChar(300)
+  requestId   String?  @map("request_id") @db.VarChar(64)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  institute Institute @relation(fields: [instituteId], references: [id])
+
+  @@index([instituteId, createdAt])
+  @@index([instituteId, entity, entityId])
+  @@index([instituteId, userId])
+  @@map("audit_logs")
+}
+
+/// DPDP parental consent for processing a child's data. Withdrawal sets withdrawn_at; rows are kept.
+model Consent {
+  id              String    @id @default(uuid()) @db.Uuid
+  instituteId     String    @map("institute_id") @db.Uuid
+  guardianId      String    @map("guardian_id") @db.Uuid
+  studentId       String    @map("student_id") @db.Uuid
+  purpose         String    @db.VarChar(60)
+  version         String    @db.VarChar(20)
+  grantedAt       DateTime  @map("granted_at") @db.Timestamptz(3)
+  withdrawnAt     DateTime? @map("withdrawn_at") @db.Timestamptz(3)
+  grantedByUserId String?   @map("granted_by_user_id") @db.Uuid
+  ip              String?   @db.VarChar(45)
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  institute Institute @relation(fields: [instituteId], references: [id])
+  guardian  Guardian  @relation(fields: [instituteId, guardianId], references: [instituteId, id])
+  student   Student   @relation(fields: [instituteId, studentId], references: [instituteId, id])
+
+  @@unique([instituteId, guardianId, studentId, purpose, version])
+  @@index([instituteId, studentId])
+  @@map("consents")
+}
+
+// ---------------------------------------------------------------------------
+// Academic structure
+// ---------------------------------------------------------------------------
+
+model AcademicYear {
+  id          String             @id @default(uuid()) @db.Uuid
+  instituteId String             @map("institute_id") @db.Uuid
+  /// e.g. "2026-27"
+  name        String             @db.VarChar(20)
+  startDate   DateTime           @map("start_date") @db.Date
+  endDate     DateTime           @map("end_date") @db.Date
+  status      AcademicYearStatus @default(upcoming)
+  createdAt   DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  institute          Institute           @relation(fields: [instituteId], references: [id])
+  sections           Section[]
+  admittedStudents   Student[]
+  enrollments        StudentEnrollment[]
+  attendanceSessions AttendanceSession[]
+  leaves             Leave[]
+  periods            Period[]
+  timetableSlots     TimetableSlot[]
+  feeStructures      FeeStructure[]
+  invoices           StudentFeeInvoice[]
+  concessions        Concession[]
+  payments           Payment[]
+  receiptSequences   ReceiptSequence[]
+  notices            Notice[]
+
+  @@unique([instituteId, name])
+  @@unique([instituteId, id])
+  @@index([instituteId, status])
+  @@map("academic_years")
+}
+
+/// A class (Class 1-12). Generic name so coaching "batches" or college "semesters" can reuse it.
+model Level {
+  id          String     @id @default(uuid()) @db.Uuid
+  instituteId String     @map("institute_id") @db.Uuid
+  name        String     @db.VarChar(60)
+  code        String?    @db.VarChar(20)
+  band        LevelBand?
+  sortOrder   Int        @default(0) @map("sort_order")
+  isActive    Boolean    @default(true) @map("is_active")
+  createdAt   DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  institute     Institute      @relation(fields: [instituteId], references: [id])
+  sections      Section[]
+  feeStructures FeeStructure[]
+
+  @@unique([instituteId, name])
+  @@unique([instituteId, id])
+  @@index([instituteId, sortOrder])
+  @@map("levels")
+}
+
+/// A division of a level for one academic year, e.g. Class 5 - A in 2026-27.
+model Section {
+  id                  String   @id @default(uuid()) @db.Uuid
+  instituteId         String   @map("institute_id") @db.Uuid
+  academicYearId      String   @map("academic_year_id") @db.Uuid
+  levelId             String   @map("level_id") @db.Uuid
+  name                String   @db.VarChar(30)
+  capacity            Int?
+  room                String?  @db.VarChar(30)
+  classTeacherStaffId String?  @map("class_teacher_staff_id") @db.Uuid
+  isActive            Boolean  @default(true) @map("is_active")
+  createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt           DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  institute          Institute           @relation(fields: [instituteId], references: [id])
+  academicYear       AcademicYear        @relation(fields: [instituteId, academicYearId], references: [instituteId, id])
+  level              Level               @relation(fields: [instituteId, levelId], references: [instituteId, id])
+  classTeacher       Staff?              @relation(fields: [classTeacherStaffId], references: [id])
+  sectionSubjects    SectionSubject[]
+  enrollments        StudentEnrollment[]
+  attendanceSessions AttendanceSession[]
+  timetableSlots     TimetableSlot[]
+
+  @@unique([instituteId, academicYearId, levelId, name])
+  @@unique([instituteId, id])
+  @@index([instituteId, levelId])
+  @@index([instituteId, classTeacherStaffId])
+  @@map("sections")
+}
+
+model Subject {
+  id          String   @id @default(uuid()) @db.Uuid
+  instituteId String   @map("institute_id") @db.Uuid
+  name        String   @db.VarChar(100)
+  code        String   @db.VarChar(20)
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  institute       Institute        @relation(fields: [instituteId], references: [id])
+  sectionSubjects SectionSubject[]
+  timetableSlots  TimetableSlot[]
+
+  @@unique([instituteId, code])
+  @@unique([instituteId, id])
+  @@map("subjects")
+}
+
+/// Which subjects a section studies and who teaches each one.
+model SectionSubject {
+  id             String   @id @default(uuid()) @db.Uuid
+  instituteId    String   @map("institute_id") @db.Uuid
+  sectionId      String   @map("section_id") @db.Uuid
+  subjectId      String   @map("subject_id") @db.Uuid
+  teacherStaffId String?  @map("teacher_staff_id") @db.Uuid
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  institute Institute @relation(fields: [instituteId], references: [id])
+  section   Section   @relation(fields: [instituteId, sectionId], references: [instituteId, id], onDelete: Cascade)
+  subject   Subject   @relation(fields: [instituteId, subjectId], references: [instituteId, id])
+  teacher   Staff?    @relation(fields: [teacherStaffId], references: [id])
+
+  @@unique([instituteId, sectionId, subjectId])
+  @@index([instituteId, teacherStaffId])
+  @@map("section_subjects")
+}
+
+// ---------------------------------------------------------------------------
+// People
+// ---------------------------------------------------------------------------
+
+/// Permanent student record. Per-year placement lives in student_enrollments.
+model Student {
+  id             String        @id @default(uuid()) @db.Uuid
+  instituteId    String        @map("institute_id") @db.Uuid
+  /// Academic year of admission (admission numbers are unique per institute per admission year).
+  academicYearId String        @map("academic_year_id") @db.Uuid
+  admissionNo    String        @map("admission_no") @db.VarChar(30)
+  /// Login for older students (optional; younger students use a guardian's login).
+  userId         String?       @unique @map("user_id") @db.Uuid
+  firstName      String        @map("first_name") @db.VarChar(100)
+  lastName       String?       @map("last_name") @db.VarChar(100)
+  dateOfBirth    DateTime?     @map("date_of_birth") @db.Date
+  gender         Gender?
+  bloodGroup     String?       @map("blood_group") @db.VarChar(5)
+  admissionDate  DateTime?     @map("admission_date") @db.Date
+  address        String?       @db.VarChar(300)
+  status         StudentStatus @default(active)
+  statusReason   String?       @map("status_reason") @db.VarChar(300)
+  createdAt      DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  institute         Institute           @relation(fields: [instituteId], references: [id])
+  admissionYear     AcademicYear        @relation(fields: [instituteId, academicYearId], references: [instituteId, id])
+  user              User?               @relation(fields: [userId], references: [id])
+  enrollments       StudentEnrollment[]
+  guardians         StudentGuardian[]
+  consents          Consent[]
+  attendanceRecords AttendanceRecord[]
+  leaves            Leave[]
+  invoices          StudentFeeInvoice[]
+  concessions       Concession[]
+  payments          Payment[]
+
+  @@unique([instituteId, academicYearId, admissionNo])
+  @@unique([instituteId, id])
+  @@index([instituteId, status])
+  @@index([instituteId, firstName])
+  @@map("students")
+}
+
+model StudentEnrollment {
+  id             String           @id @default(uuid()) @db.Uuid
+  instituteId    String           @map("institute_id") @db.Uuid
+  studentId      String           @map("student_id") @db.Uuid
+  academicYearId String           @map("academic_year_id") @db.Uuid
+  sectionId      String           @map("section_id") @db.Uuid
+  rollNo         Int?             @map("roll_no")
+  status         EnrollmentStatus @default(active)
+  enrolledOn     DateTime?        @map("enrolled_on") @db.Date
+  leftOn         DateTime?        @map("left_on") @db.Date
+  createdAt      DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  institute    Institute    @relation(fields: [instituteId], references: [id])
+  student      Student      @relation(fields: [instituteId, studentId], references: [instituteId, id])
+  academicYear AcademicYear @relation(fields: [instituteId, academicYearId], references: [instituteId, id])
+  section      Section      @relation(fields: [instituteId, sectionId], references: [instituteId, id])
+
+  @@unique([instituteId, academicYearId, studentId])
+  @@unique([instituteId, sectionId, rollNo])
+  @@index([instituteId, sectionId, status])
+  @@map("student_enrollments")
+}
+
+model Guardian {
+  id          String   @id @default(uuid()) @db.Uuid
+  instituteId String   @map("institute_id") @db.Uuid
+  /// Parent login (one user can be a guardian of several siblings and also hold other roles).
+  userId      String?  @unique @map("user_id") @db.Uuid
+  name        String   @db.VarChar(150)
+  phone       String   @db.VarChar(15)
+  email       String?  @db.VarChar(254)
+  occupation  String?  @db.VarChar(100)
+  address     String?  @db.VarChar(300)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  institute Institute         @relation(fields: [instituteId], references: [id])
+  user      User?             @relation(fields: [userId], references: [id])
+  students  StudentGuardian[]
+  consents  Consent[]
+
+  @@unique([instituteId, id])
+  @@index([instituteId, phone])
+  @@map("guardians")
+}
+
+model StudentGuardian {
+  id          String           @id @default(uuid()) @db.Uuid
+  instituteId String           @map("institute_id") @db.Uuid
+  studentId   String           @map("student_id") @db.Uuid
+  guardianId  String           @map("guardian_id") @db.Uuid
+  relation    GuardianRelation
+  isPrimary   Boolean          @default(false) @map("is_primary")
+  isFeePayer  Boolean          @default(false) @map("is_fee_payer")
+  createdAt   DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  institute Institute @relation(fields: [instituteId], references: [id])
+  student   Student   @relation(fields: [instituteId, studentId], references: [instituteId, id])
+  guardian  Guardian  @relation(fields: [instituteId, guardianId], references: [instituteId, id])
+
+  @@unique([instituteId, studentId, guardianId])
+  @@index([instituteId, guardianId])
+  @@map("student_guardians")
+}
+
+model Staff {
+  id           String      @id @default(uuid()) @db.Uuid
+  instituteId  String      @map("institute_id") @db.Uuid
+  userId       String?     @unique @map("user_id") @db.Uuid
+  employeeCode String      @map("employee_code") @db.VarChar(30)
+  name         String      @db.VarChar(150)
+  phone        String      @db.VarChar(15)
+  email        String?     @db.VarChar(254)
+  designation  String?     @db.VarChar(100)
+  department   String?     @db.VarChar(100)
+  staffType    StaffType   @default(teaching) @map("staff_type")
+  joiningDate  DateTime?   @map("joining_date") @db.Date
+  status       StaffStatus @default(active)
+  createdAt    DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime    @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  institute       Institute        @relation(fields: [instituteId], references: [id])
+  user            User?            @relation(fields: [userId], references: [id])
+  classSections   Section[]
+  sectionSubjects SectionSubject[]
+  timetableSlots  TimetableSlot[]
+  leaves          Leave[]
+
+  @@unique([instituteId, employeeCode])
+  @@unique([instituteId, id])
+  @@index([instituteId, status])
+  @@index([instituteId, phone])
+  @@map("staff")
+}
+
+// ---------------------------------------------------------------------------
+// Operations: attendance, leaves, timetable
+// ---------------------------------------------------------------------------
+
+/// One roll call for a section on a date (and session, for twice-a-day attendance).
+model AttendanceSession {
+  id             String                @id @default(uuid()) @db.Uuid
+  instituteId    String                @map("institute_id") @db.Uuid
+  academicYearId String                @map("academic_year_id") @db.Uuid
+  sectionId      String                @map("section_id") @db.Uuid
+  date           DateTime              @db.Date
+  session        AttendanceSessionType @default(full_day)
+  markedByUserId String?               @map("marked_by_user_id") @db.Uuid
+  markedAt       DateTime?             @map("marked_at") @db.Timestamptz(3)
+  createdAt      DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime              @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  institute    Institute          @relation(fields: [instituteId], references: [id])
+  academicYear AcademicYear       @relation(fields: [instituteId, academicYearId], references: [instituteId, id])
+  section      Section            @relation(fields: [instituteId, sectionId], references: [instituteId, id])
+  records      AttendanceRecord[]
+
+  @@unique([instituteId, sectionId, date, session])
+  @@unique([instituteId, id])
+  @@unique([instituteId, id, date, session])
+  @@index([instituteId, academicYearId, date])
+  @@map("attendance_sessions")
+}
+
+/// date and session are copied from the attendance session (enforced by the composite FK) so the
+/// database can guarantee one record per student per date per session.
+model AttendanceRecord {
+  id                  String                @id @default(uuid()) @db.Uuid
+  instituteId         String                @map("institute_id") @db.Uuid
+  attendanceSessionId String                @map("attendance_session_id") @db.Uuid
+  studentId           String                @map("student_id") @db.Uuid
+  date                DateTime              @db.Date
+  session             AttendanceSessionType
+  status              AttendanceStatus
+  remark              String?               @db.VarChar(200)
+  createdAt           DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt           DateTime              @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  institute         Institute         @relation(fields: [instituteId], references: [id])
+  attendanceSession AttendanceSession @relation(fields: [instituteId, attendanceSessionId, date, session], references: [instituteId, id, date, session])
+  student           Student           @relation(fields: [instituteId, studentId], references: [instituteId, id])
+
+  @@unique([instituteId, studentId, date, session])
+  @@unique([instituteId, attendanceSessionId, studentId])
+  @@index([instituteId, date, status])
+  @@map("attendance_records")
+}
+
+/// Leave request for exactly one student or one staff member.
+model Leave {
+  id              String      @id @default(uuid()) @db.Uuid
+  instituteId     String      @map("institute_id") @db.Uuid
+  academicYearId  String      @map("academic_year_id") @db.Uuid
+  studentId       String?     @map("student_id") @db.Uuid
+  staffId         String?     @map("staff_id") @db.Uuid
+  fromDate        DateTime    @map("from_date") @db.Date
+  toDate          DateTime    @map("to_date") @db.Date
+  reason          String      @db.VarChar(500)
+  status          LeaveStatus @default(pending)
+  appliedByUserId String      @map("applied_by_user_id") @db.Uuid
+  decidedByUserId String?     @map("decided_by_user_id") @db.Uuid
+  decidedAt       DateTime?   @map("decided_at") @db.Timestamptz(3)
+  decisionNote    String?     @map("decision_note") @db.VarChar(300)
+  createdAt       DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime    @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  institute    Institute    @relation(fields: [instituteId], references: [id])
+  academicYear AcademicYear @relation(fields: [instituteId, academicYearId], references: [instituteId, id])
+  student      Student?     @relation(fields: [studentId], references: [id])
+  staff        Staff?       @relation(fields: [staffId], references: [id])
+
+  @@index([instituteId, studentId])
+  @@index([instituteId, staffId])
+  @@index([instituteId, status, fromDate])
+  @@map("leaves")
+}
+
+/// Bell schedule for an academic year. Times are IST wall-clock "HH:MM".
+model Period {
+  id             String   @id @default(uuid()) @db.Uuid
+  instituteId    String   @map("institute_id") @db.Uuid
+  academicYearId String   @map("academic_year_id") @db.Uuid
+  periodNo       Int      @map("period_no")
+  name           String   @db.VarChar(30)
+  startTime      String   @map("start_time") @db.Char(5)
+  endTime        String   @map("end_time") @db.Char(5)
+  isBreak        Boolean  @default(false) @map("is_break")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  institute      Institute       @relation(fields: [instituteId], references: [id])
+  academicYear   AcademicYear    @relation(fields: [instituteId, academicYearId], references: [instituteId, id])
+  timetableSlots TimetableSlot[]
+
+  @@unique([instituteId, academicYearId, periodNo])
+  @@unique([instituteId, id])
+  @@map("periods")
+}
+
+/// The unique constraints double as clash detection: one slot per section, teacher and room per period.
+model TimetableSlot {
+  id             String   @id @default(uuid()) @db.Uuid
+  instituteId    String   @map("institute_id") @db.Uuid
+  academicYearId String   @map("academic_year_id") @db.Uuid
+  sectionId      String   @map("section_id") @db.Uuid
+  subjectId      String   @map("subject_id") @db.Uuid
+  teacherStaffId String?  @map("teacher_staff_id") @db.Uuid
+  periodId       String   @map("period_id") @db.Uuid
+  /// ISO day of week: 1 = Monday ... 7 = Sunday
+  dayOfWeek      Int      @map("day_of_week") @db.SmallInt
+  startTime      String   @map("start_time") @db.Char(5)
+  endTime        String   @map("end_time") @db.Char(5)
+  room           String?  @db.VarChar(30)
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  institute    Institute    @relation(fields: [instituteId], references: [id])
+  academicYear AcademicYear @relation(fields: [instituteId, academicYearId], references: [instituteId, id])
+  section      Section      @relation(fields: [instituteId, sectionId], references: [instituteId, id], onDelete: Cascade)
+  subject      Subject      @relation(fields: [instituteId, subjectId], references: [instituteId, id])
+  period       Period       @relation(fields: [instituteId, periodId], references: [instituteId, id])
+  teacher      Staff?       @relation(fields: [teacherStaffId], references: [id])
+
+  @@unique([instituteId, academicYearId, sectionId, dayOfWeek, periodId])
+  @@unique([instituteId, academicYearId, teacherStaffId, dayOfWeek, periodId])
+  @@unique([instituteId, academicYearId, room, dayOfWeek, periodId])
+  @@map("timetable_slots")
+}
+
+// ---------------------------------------------------------------------------
+// Finance (manual collection). Amounts are BIGINT paise.
+// ---------------------------------------------------------------------------
+
+model FeeHead {
+  id          String   @id @default(uuid()) @db.Uuid
+  instituteId String   @map("institute_id") @db.Uuid
+  name        String   @db.VarChar(100)
+  code        String   @db.VarChar(30)
+  description String?  @db.VarChar(300)
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  institute      Institute          @relation(fields: [instituteId], references: [id])
+  structureItems FeeStructureItem[]
+  invoiceItems   InvoiceItem[]
+  concessions    Concession[]
+
+  @@unique([instituteId, code])
+  @@unique([instituteId, id])
+  @@map("fee_heads")
+}
+
+/// Fee plan for one level in one academic year.
+model FeeStructure {
+  id             String   @id @default(uuid()) @db.Uuid
+  instituteId    String   @map("institute_id") @db.Uuid
+  academicYearId String   @map("academic_year_id") @db.Uuid
+  levelId        String   @map("level_id") @db.Uuid
+  name           String   @db.VarChar(100)
+  isActive       Boolean  @default(true) @map("is_active")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  institute    Institute           @relation(fields: [instituteId], references: [id])
+  academicYear AcademicYear        @relation(fields: [instituteId, academicYearId], references: [instituteId, id])
+  level        Level               @relation(fields: [instituteId, levelId], references: [instituteId, id])
+  items        FeeStructureItem[]
+  invoices     StudentFeeInvoice[]
+
+  @@unique([instituteId, academicYearId, levelId, name])
+  @@unique([instituteId, id])
+  @@map("fee_structures")
+}
+
+/// One fee head for one installment of a structure, with its due date and late-fine rule.
+model FeeStructureItem {
+  id                  String       @id @default(uuid()) @db.Uuid
+  instituteId         String       @map("institute_id") @db.Uuid
+  feeStructureId      String       @map("fee_structure_id") @db.Uuid
+  feeHeadId           String       @map("fee_head_id") @db.Uuid
+  installmentNo       Int          @default(1) @map("installment_no")
+  amountPaise         BigInt       @map("amount_paise")
+  dueDate             DateTime     @map("due_date") @db.Date
+  lateFineType        LateFineType @default(none) @map("late_fine_type")
+  lateFineAmountPaise BigInt       @default(0) @map("late_fine_amount_paise")
+  lateFineGraceDays   Int          @default(0) @map("late_fine_grace_days")
+  createdAt           DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt           DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  institute    Institute    @relation(fields: [instituteId], references: [id])
+  feeStructure FeeStructure @relation(fields: [instituteId, feeStructureId], references: [instituteId, id], onDelete: Cascade)
+  feeHead      FeeHead      @relation(fields: [instituteId, feeHeadId], references: [instituteId, id])
+
+  @@unique([instituteId, feeStructureId, feeHeadId, installmentNo])
+  @@map("fee_structure_items")
+}
+
+/// Totals are maintained by the fee service inside the posting transaction.
+/// net = gross - concession + fine, and 0 <= paid <= net (CHECK constraints).
+model StudentFeeInvoice {
+  id              String        @id @default(uuid()) @db.Uuid
+  instituteId     String        @map("institute_id") @db.Uuid
+  academicYearId  String        @map("academic_year_id") @db.Uuid
+  studentId       String        @map("student_id") @db.Uuid
+  feeStructureId  String?       @map("fee_structure_id") @db.Uuid
+  installmentNo   Int           @default(1) @map("installment_no")
+  dueDate         DateTime      @map("due_date") @db.Date
+  grossPaise      BigInt        @map("gross_paise")
+  concessionPaise BigInt        @default(0) @map("concession_paise")
+  finePaise       BigInt        @default(0) @map("fine_paise")
+  netPaise        BigInt        @map("net_paise")
+  paidPaise       BigInt        @default(0) @map("paid_paise")
+  status          InvoiceStatus @default(unpaid)
+  cancelledAt     DateTime?     @map("cancelled_at") @db.Timestamptz(3)
+  cancelReason    String?       @map("cancel_reason") @db.VarChar(300)
+  createdAt       DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  institute    Institute     @relation(fields: [instituteId], references: [id])
+  academicYear AcademicYear  @relation(fields: [instituteId, academicYearId], references: [instituteId, id])
+  student      Student       @relation(fields: [instituteId, studentId], references: [instituteId, id])
+  feeStructure FeeStructure? @relation(fields: [feeStructureId], references: [id])
+  items        InvoiceItem[]
+  concessions  Concession[]
+  payments     Payment[]
+
+  @@unique([instituteId, studentId, feeStructureId, installmentNo])
+  @@unique([instituteId, id])
+  @@index([instituteId, academicYearId, status])
+  @@index([instituteId, dueDate])
+  @@map("student_fee_invoices")
+}
+
+model InvoiceItem {
+  id          String          @id @default(uuid()) @db.Uuid
+  instituteId String          @map("institute_id") @db.Uuid
+  invoiceId   String          @map("invoice_id") @db.Uuid
+  /// Null for late-fine lines.
+  feeHeadId   String?         @map("fee_head_id") @db.Uuid
+  kind        InvoiceItemKind @default(fee)
+  description String          @db.VarChar(200)
+  amountPaise BigInt          @map("amount_paise")
+  createdAt   DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  institute Institute         @relation(fields: [instituteId], references: [id])
+  invoice   StudentFeeInvoice @relation(fields: [instituteId, invoiceId], references: [instituteId, id], onDelete: Cascade)
+  feeHead   FeeHead?          @relation(fields: [feeHeadId], references: [id])
+
+  @@index([instituteId, invoiceId])
+  @@map("invoice_items")
+}
+
+/// A concession for a student: either a percentage (basis points, 10000 = 100%) or a fixed amount.
+model Concession {
+  id                 String         @id @default(uuid()) @db.Uuid
+  instituteId        String         @map("institute_id") @db.Uuid
+  academicYearId     String         @map("academic_year_id") @db.Uuid
+  studentId          String         @map("student_id") @db.Uuid
+  /// Null = applies to all of the student's invoices for the year.
+  invoiceId          String?        @map("invoice_id") @db.Uuid
+  /// Null = applies to all fee heads.
+  feeHeadId          String?        @map("fee_head_id") @db.Uuid
+  type               ConcessionType
+  percentBasisPoints Int?           @map("percent_basis_points")
+  amountPaise        BigInt?        @map("amount_paise")
+  reason             String?        @db.VarChar(300)
+  approvedByUserId   String?        @map("approved_by_user_id") @db.Uuid
+  createdAt          DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  institute    Institute          @relation(fields: [instituteId], references: [id])
+  academicYear AcademicYear       @relation(fields: [instituteId, academicYearId], references: [instituteId, id])
+  student      Student            @relation(fields: [instituteId, studentId], references: [instituteId, id])
+  invoice      StudentFeeInvoice? @relation(fields: [invoiceId], references: [id])
+  feeHead      FeeHead?           @relation(fields: [feeHeadId], references: [id])
+
+  @@index([instituteId, studentId, academicYearId])
+  @@map("concessions")
+}
+
+/// Append-only ledger: UPDATE/DELETE are rejected by a trigger. Corrections are payment_reversals.
+/// receipt_seq comes from receipt_sequences (locked FOR UPDATE) so numbers have no gaps or duplicates.
+model Payment {
+  id                String      @id @default(uuid()) @db.Uuid
+  instituteId       String      @map("institute_id") @db.Uuid
+  academicYearId    String      @map("academic_year_id") @db.Uuid
+  studentId         String      @map("student_id") @db.Uuid
+  invoiceId         String      @map("invoice_id") @db.Uuid
+  receiptSeq        Int         @map("receipt_seq")
+  /// Formatted receipt number, e.g. "2026-27/000123".
+  receiptNo         String      @map("receipt_no") @db.VarChar(40)
+  amountPaise       BigInt      @map("amount_paise")
+  mode              PaymentMode
+  /// Cheque number, UPI reference or bank transfer UTR. Required for every mode except cash.
+  referenceNo       String?     @map("reference_no") @db.VarChar(60)
+  instrumentDate    DateTime?   @map("instrument_date") @db.Date
+  bankName          String?     @map("bank_name") @db.VarChar(100)
+  paidOn            DateTime    @map("paid_on") @db.Date
+  collectedByUserId String      @map("collected_by_user_id") @db.Uuid
+  remarks           String?     @db.VarChar(300)
+  createdAt         DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime    @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  institute    Institute         @relation(fields: [instituteId], references: [id])
+  academicYear AcademicYear      @relation(fields: [instituteId, academicYearId], references: [instituteId, id])
+  student      Student           @relation(fields: [instituteId, studentId], references: [instituteId, id])
+  invoice      StudentFeeInvoice @relation(fields: [instituteId, invoiceId], references: [instituteId, id])
+  reversal     PaymentReversal?
+
+  @@unique([instituteId, academicYearId, receiptSeq])
+  @@unique([instituteId, receiptNo])
+  @@unique([instituteId, id])
+  @@index([instituteId, studentId])
+  @@index([instituteId, invoiceId])
+  @@index([instituteId, paidOn])
+  @@map("payments")
+}
+
+/// Append-only. At most one reversal per payment.
+model PaymentReversal {
+  id               String   @id @default(uuid()) @db.Uuid
+  instituteId      String   @map("institute_id") @db.Uuid
+  paymentId        String   @map("payment_id") @db.Uuid
+  amountPaise      BigInt   @map("amount_paise")
+  reason           String   @db.VarChar(300)
+  reversedByUserId String   @map("reversed_by_user_id") @db.Uuid
+  reversedOn       DateTime @map("reversed_on") @db.Date
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt        DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  institute Institute @relation(fields: [instituteId], references: [id])
+  payment   Payment   @relation(fields: [instituteId, paymentId], references: [instituteId, id])
+
+  @@unique([instituteId, paymentId])
+  @@map("payment_reversals")
+}
+
+/// One counter row per institute per academic year, locked with SELECT ... FOR UPDATE when posting.
+model ReceiptSequence {
+  instituteId    String   @map("institute_id") @db.Uuid
+  academicYearId String   @map("academic_year_id") @db.Uuid
+  prefix         String   @default("") @db.VarChar(20)
+  lastValue      Int      @default(0) @map("last_value")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  institute    Institute    @relation(fields: [instituteId], references: [id])
+  academicYear AcademicYear @relation(fields: [instituteId, academicYearId], references: [instituteId, id])
+
+  @@id([instituteId, academicYearId])
+  @@map("receipt_sequences")
+}
+
+// ---------------------------------------------------------------------------
+// Communication (in-app only)
+// ---------------------------------------------------------------------------
+
+/// Empty audience arrays mean "everyone"; non-empty arrays narrow the audience (AND across arrays).
+model Notice {
+  id                 String       @id @default(uuid()) @db.Uuid
+  instituteId        String       @map("institute_id") @db.Uuid
+  academicYearId     String?      @map("academic_year_id") @db.Uuid
+  title              String       @db.VarChar(200)
+  body               String
+  status             NoticeStatus @default(draft)
+  /// Role codes, e.g. ["parent", "teacher"].
+  audienceRoles      String[]     @default([]) @map("audience_roles")
+  audienceLevelIds   String[]     @default([]) @map("audience_level_ids") @db.Uuid
+  audienceSectionIds String[]     @default([]) @map("audience_section_ids") @db.Uuid
+  publishedAt        DateTime?    @map("published_at") @db.Timestamptz(3)
+  expiresAt          DateTime?    @map("expires_at") @db.Timestamptz(3)
+  createdByUserId    String       @map("created_by_user_id") @db.Uuid
+  createdAt          DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  institute    Institute     @relation(fields: [instituteId], references: [id])
+  academicYear AcademicYear? @relation(fields: [academicYearId], references: [id])
+  reads        NoticeRead[]
+
+  @@unique([instituteId, id])
+  @@index([instituteId, status, publishedAt])
+  @@map("notices")
+}
+
+model NoticeRead {
+  id          String   @id @default(uuid()) @db.Uuid
+  instituteId String   @map("institute_id") @db.Uuid
+  noticeId    String   @map("notice_id") @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  readAt      DateTime @default(now()) @map("read_at") @db.Timestamptz(3)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  institute Institute @relation(fields: [instituteId], references: [id])
+  notice    Notice    @relation(fields: [instituteId, noticeId], references: [instituteId, id], onDelete: Cascade)
+  user      User      @relation(fields: [instituteId, userId], references: [instituteId, id], onDelete: Cascade)
+
+  @@unique([instituteId, noticeId, userId])
+  @@index([instituteId, userId])
+  @@map("notice_reads")
+}
+
+model Notification {
+  id          String    @id @default(uuid()) @db.Uuid
+  instituteId String    @map("institute_id") @db.Uuid
+  userId      String    @map("user_id") @db.Uuid
+  title       String    @db.VarChar(200)
+  body        String    @db.VarChar(1000)
+  /// e.g. attendance.absent, notice.published, fee.due
+  type        String    @db.VarChar(40)
+  entityType  String?   @map("entity_type") @db.VarChar(60)
+  entityId    String?   @map("entity_id") @db.VarChar(64)
+  readAt      DateTime? @map("read_at") @db.Timestamptz(3)
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  institute Institute @relation(fields: [instituteId], references: [id])
+  user      User      @relation(fields: [instituteId, userId], references: [instituteId, id], onDelete: Cascade)
+
+  @@index([instituteId, userId, readAt])
+  @@index([instituteId, userId, createdAt])
+  @@map("notifications")
 }

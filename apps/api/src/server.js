@@ -1,6 +1,6 @@
 const { env } = require('./config/env');
 const { logger } = require('./lib/logger');
-const { prisma } = require('./lib/prisma');
+const { prisma, isRlsEnforcedForCurrentRole } = require('./lib/prisma');
 const { createApp } = require('./app');
 
 const SHUTDOWN_TIMEOUT_MS = 10_000;
@@ -14,7 +14,21 @@ const server = app.listen(env.PORT, () => {
   if (env.isProduction && !/^ap-south-/.test(env.DATA_REGION)) {
     logger.warn({ dataRegion: env.DATA_REGION }, 'production DATA_REGION is not an India region');
   }
+  checkDatabaseRole();
 });
+
+async function checkDatabaseRole() {
+  try {
+    if (await isRlsEnforcedForCurrentRole()) return;
+    logger.error(
+      'DATABASE_URL connects as a superuser or BYPASSRLS role, so tenant isolation (RLS) is OFF. ' +
+        'Use a normal role that owns the database (see README).',
+    );
+    if (env.isProduction) process.exit(1);
+  } catch (error) {
+    logger.warn({ err: error }, 'could not verify the database role (is Postgres running?)');
+  }
+}
 
 // Keep connections open longer than typical load balancer idle timeouts (AWS ALB: 60s).
 server.keepAliveTimeout = 65_000;
